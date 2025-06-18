@@ -1,8 +1,11 @@
 import React from 'react'
-
+import Login from './components/Login.jsx'
+import './App.css'
 const App = () => {
   return (
-    <div>App</div>
+    <div>
+      <Login />
+    </div>
   )
 }
 
