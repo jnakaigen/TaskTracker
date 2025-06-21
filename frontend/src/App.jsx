@@ -1,6 +1,7 @@
 import React from 'react'
 // import Login from './components/Login.jsx'
 import './App.css'
+
 import Admnavbar from './components/admin/Admnavbar.jsx'
 import Project from './components/admin/Project.jsx'
 import AdmDash from './components/admin/AdmDash.jsx'
@@ -13,6 +14,7 @@ const App = () => {
       {/* <AdmDash/> */}
       {/* <Project/> */}
       <Task/>
+
     </div>
   )
 }
