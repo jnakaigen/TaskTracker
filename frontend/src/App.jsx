@@ -1,11 +1,11 @@
 import React from 'react'
-import Login from './components/Login.jsx'
+// import Login from './components/Login.jsx'
 import './App.css'
-import Admnavbar from './components/admin/Admnavbar.jsx'
+import Project from './components/admin/Project.jsx'
 const App = () => {
   return (
     <div>
-      <Login />
+      <Project/>
     </div>
   )
 }
