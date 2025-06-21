@@ -5,6 +5,7 @@ import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
+import {Link} from 'react-router-dom';
 const Admnavbar = () => {
   return (
     <div> <Box sx={{ flexGrow: 1 }}>
@@ -24,14 +25,14 @@ const Admnavbar = () => {
             TaskTracker
             </Typography>
 
-          <Button color="inherit" sx={{ mx: 1, color: '#555', fontWeight: 500, textTransform: 'none', '&:hover': { color: '#1976d2' } }}>
-Dashboard</Button>
-          <Button color="inherit" sx={{ mx: 1, color: '#555', fontWeight: 500, textTransform: 'none', '&:hover': { color: '#1976d2' } }}>
-Projects</Button>
-          <Button color="inherit" sx={{ mx: 1, color: '#555', fontWeight: 500, textTransform: 'none', '&:hover': { color: '#1976d2' } }}>
-Team</Button>
-          <Button color="inherit" sx={{ mx: 1, color: '#555', fontWeight: 500, textTransform: 'none', '&:hover': { color: '#1976d2' } }}>
-Tasks</Button>
+          <Link to='/admdash'><Button color="inherit" sx={{ mx: 1, color: '#555', fontWeight: 500, textTransform: 'none', '&:hover': { color: '#1976d2' } }}>
+Dashboard</Button></Link>
+          <Link to='/projects'><Button color="inherit" sx={{ mx: 1, color: '#555', fontWeight: 500, textTransform: 'none', '&:hover': { color: '#1976d2' } }}>
+Projects</Button></Link>
+          <Link to='/team'><Button color="inherit" sx={{ mx: 1, color: '#555', fontWeight: 500, textTransform: 'none', '&:hover': { color: '#1976d2' } }}>
+Team</Button></Link>
+          <Link to='/tasks'><Button color="inherit" sx={{ mx: 1, color: '#555', fontWeight: 500, textTransform: 'none', '&:hover': { color: '#1976d2' } }}>
+Tasks</Button></Link>
         </Toolbar>
       </AppBar>
     </Box></div>
