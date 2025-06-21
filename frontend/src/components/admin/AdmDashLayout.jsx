@@ -25,6 +25,7 @@ import { Navigate, NavLink } from 'react-router-dom';
 import LogoutIcon from '@mui/icons-material/Logout';
 import { useNavigate } from 'react-router-dom';
 import Button from '@mui/material/Button';
+import { Outlet } from 'react-router-dom';
 
 const drawerWidth = 260;
 
@@ -55,9 +56,10 @@ const AdmDashLayout = ({ children }) => {
 
   const menuItems = [
     { text: 'Dashboard', icon: <DashboardIcon />, path: '/admdash' },
-    { text: 'Projects', icon: <WorkIcon />, path: '/projects' },
-    { text: 'Team', icon: <GroupIcon />, path: '/team' },
-    { text: 'Tasks', icon: <LayersIcon />, path: '/tasks' },
+    { text: 'Projects', icon: <WorkIcon />, path: '/admdash/projects' },
+{ text: 'Team', icon: <GroupIcon />, path: '/admdash/team' },
+{ text: 'Tasks', icon: <LayersIcon />, path: '/admdash/tasks' },
+
   ];
 
   const drawer = (
@@ -220,7 +222,7 @@ const AdmDashLayout = ({ children }) => {
           minHeight: 'calc(100vh - 120px)',
           position: 'relative'
         }}>
-          {children}
+          <Outlet />
         </Box>
       </Box>
     </Box>
