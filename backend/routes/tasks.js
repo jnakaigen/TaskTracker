@@ -27,6 +27,7 @@ router.post('/',createTask)
 //DELETE a new workout
 router.delete('/:id',deleteTask)
 //UPDATE a workout
+router.put('/:id',updateTask)
 router.patch('/:id',updateTask)
 
 module.exports = router;

@@ -17,9 +17,9 @@ const getTask = async (req, res) => {
 // Create a new task
 
 const createTask = async (req, res) => {
-    const{title,description,dueDate,status,priority} = req.body;
+    const{title,description,dueDate,assignedTo,project,status} = req.body;
         try{//add new doc to db
-            const task=await Task.create({title,description,dueDate,status,priority}) 
+            const task=await Task.create({title,description,dueDate,assignedTo,project,status}) 
             res.status(200).json(task)}
         catch(error){
             res.status(400).json({error:error.message})}
@@ -37,11 +37,13 @@ const deleteTask = async (req, res) => {
 
 // Update a task
 const updateTask = async (req, res) => {
-    const { id }=req.params;
+    try{const { id }=req.params;
     if(!mongoose.Types.ObjectId.isValid(id)) return res.status(404).json({message: 'Invalid ID'});
-    const task = await Task.findOneAndUpdate({_id: id}, {...req.body});
+    const task = await Task.findOneAndUpdate({_id: id}, {...req.body},{ new: true });
     if(!task) return res.status(404).json({message: 'Task not found'});
-    res.status(200).json(task);
+    res.status(200).json(task);}
+    catch(error){
+        res.status(400).json({error:error.message})}
 }
 
 

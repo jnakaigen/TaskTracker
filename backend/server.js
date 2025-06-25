@@ -13,7 +13,8 @@ const app=express() //express app
 /*app.listen(4000,()=>{
     console.log("Listening on port 4000")
 })*/
-
+const cors=require('cors')
+app.use(cors())
 //6th step
 app.use(express.json())
 
