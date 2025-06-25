@@ -1,0 +1,2 @@
+created a useEffect function in task.jsx
+implemented cors in server.js file

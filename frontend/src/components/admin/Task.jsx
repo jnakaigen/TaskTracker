@@ -2,11 +2,12 @@ import React, { useState, useEffect } from 'react';
 import {
   Box, Card, CardContent, Typography, TextField, MenuItem,
   Button, Table, TableBody, TableCell, TableContainer, TableHead,
-  TableRow, Paper, IconButton, Stack
+  TableRow, Paper, IconButton, Stack, Snackbar, Alert
 } from '@mui/material';
 import { Edit, Delete, CheckCircle, AccessTime, ErrorOutline } from '@mui/icons-material';
 
 const Task = () => {
+  /*
   const initialTasks = [
     { title: "Design Landing Page", description: "Create a modern design for the new homepage.", dueDate: "2025-06-20", assignedTo: "u2", project: "proj1", status: "In Progress" },
     { title: "Setup Hosting", description: "Set up the website on the new hosting platform.", dueDate: "2025-06-22", assignedTo: "u3", project: "proj1", status: "To Do" },
@@ -18,8 +19,8 @@ const Task = () => {
     { title: "Schedule Posts", description: "Use Buffer to schedule all posts across platforms.", dueDate: "2025-06-12", assignedTo: "u5", project: "proj3", status: "In Progress" },
     { title: "Design Campaign Graphics", description: "Create Instagram and Twitter ad creatives.", dueDate: "2025-06-15", assignedTo: "u4", project: "proj3", status: "To Do" }
   ];
-
-  const [tasks, setTasks] = useState(initialTasks);
+*/
+  const [tasks, setTasks] = useState([]);
   const [newTask, setNewTask] = useState({
     title: '',
     description: '',
@@ -36,8 +37,31 @@ const Task = () => {
 
   const [editingIndex, setEditingIndex] = useState(null);
   const [editTask, setEditTask] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
 
-  const filteredTasks = tasks.filter((task, index) => {
+  // Fetch tasks from backend
+  useEffect(() => {
+    const fetchTasks = async () => {
+      setLoading(true);
+      try {
+        const response = await fetch('http://localhost:4000/api/tasks');
+        if (!response.ok) {
+          throw new Error('Failed to fetch tasks');
+        }
+        const data = await response.json();
+        setTasks(data);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchTasks();
+  }, []);
+
+  const filteredTasks = tasks.filter((task) => {
     const matchesStatus = statusFilter === 'All' || task.status === statusFilter;
     const matchesProject = projectFilter === 'All' || task.project === projectFilter;
     const matchesMember = memberFilter === 'All' || task.assignedTo === memberFilter;
@@ -45,30 +69,89 @@ const Task = () => {
     return matchesStatus && matchesProject && matchesMember && matchesSearch;
   });
 
-  const handleCreateTask = () => {
-    if (newTask.title && newTask.dueDate) {
-      setTasks(prev => [...prev, newTask]);
+  const handleCreateTask = async () => {
+    if (!newTask.title || !newTask.dueDate) {
+      setError('Title and Due Date are required');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const response = await fetch('http://localhost:4000/api/tasks', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(newTask),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create task');
+      }
+
+      const createdTask = await response.json();
+      setTasks(prev => [...prev, createdTask]);
       setNewTask({ title: '', description: '', dueDate: '', assignedTo: '', project: '', status: 'To Do' });
+      setSuccess('Task created successfully');
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleDelete = (index) => {
-    const updated = [...tasks];
-    updated.splice(index, 1);
-    setTasks(updated);
+  const handleDelete = async (index) => {
+    const taskToDelete = filteredTasks[index];
+    try {
+      setLoading(true);
+      const response = await fetch(`http://localhost:4000/api/tasks/${taskToDelete._id}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete task');
+      }
+
+      setTasks(prev => prev.filter(task => task._id !== taskToDelete._id));
+      setSuccess('Task deleted successfully');
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleEdit = (index) => {
     setEditingIndex(index);
-    setEditTask({ ...tasks[index] });
+    setEditTask({ ...filteredTasks[index] });
   };
 
-  const handleUpdateTask = () => {
-    const updatedTasks = [...tasks];
-    updatedTasks[editingIndex] = editTask;
-    setTasks(updatedTasks);
-    setEditingIndex(null);
-    setEditTask(null);
+  const handleUpdateTask = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(`http://localhost:4000/api/tasks/${editTask._id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(editTask),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update task');
+      }
+
+      const updatedTask = await response.json();
+      setTasks(prev => prev.map(task => task._id === updatedTask._id ? updatedTask : task)); 
+      setEditingIndex(null);
+      setEditTask(null);
+      setSuccess('Task updated successfully');
+    } catch (err) {
+      setError(err.message);
+      console.error('Update error:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleCancelEdit = () => {
@@ -83,9 +166,33 @@ const Task = () => {
     { label: 'In Progress', value: tasks.filter(t => t.status === 'In Progress').length, description: 'Currently active tasks', icon: <ErrorOutline color="error" /> },
   ];
 
+  const handleCloseSnackbar = () => {
+    setError(null);
+    setSuccess(null);
+  };
+
   return (
     <Box p={3} sx={{ bgcolor: '#ffffff' }}>
       <Typography variant="h4" mb={3} fontWeight={600}>Task Management</Typography>
+
+      {/* Error/Success notifications */}
+      <Snackbar open={!!error} autoHideDuration={6000} onClose={handleCloseSnackbar}>
+        <Alert onClose={handleCloseSnackbar} severity="error" sx={{ width: '100%' }}>
+          {error}
+        </Alert>
+      </Snackbar>
+      <Snackbar open={!!success} autoHideDuration={6000} onClose={handleCloseSnackbar}>
+        <Alert onClose={handleCloseSnackbar} severity="success" sx={{ width: '100%' }}>
+          {success}
+        </Alert>
+      </Snackbar>
+
+      {/* Loading indicator */}
+      {loading && (
+        <Box sx={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.1)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 9999 }}>
+          <Typography variant="h6">Loading...</Typography>
+        </Box>
+      )}
 
       <Box display="flex" gap={2} mb={3}>
         {stats.map((stat, i) => {
@@ -154,11 +261,11 @@ const Task = () => {
                   </TableHead>
                   <TableBody>
                     {filteredTasks.map((task, index) => (
-                      <React.Fragment key={index}>
+                      <React.Fragment key={task._id}>
                         <TableRow>
                           <TableCell>{task.title}</TableCell>
                           <TableCell>{task.description}</TableCell>
-                          <TableCell>{task.dueDate}</TableCell>
+                          <TableCell>{new Date(task.dueDate).toLocaleDateString()}</TableCell>
                           <TableCell>{task.assignedTo}</TableCell>
                           <TableCell>{task.project}</TableCell>
                           <TableCell>{task.status}</TableCell>
@@ -175,7 +282,7 @@ const Task = () => {
                               <Box mt={2} p={2} bgcolor="#fff" border="1px solid #ccc" borderRadius={2}>
                                 <TextField fullWidth label="Title" value={editTask.title} onChange={e => setEditTask({ ...editTask, title: e.target.value })} sx={{ mb: 2 }} />
                                 <TextField fullWidth label="Description" value={editTask.description} onChange={e => setEditTask({ ...editTask, description: e.target.value })} sx={{ mb: 2 }} multiline rows={2} />
-                                <TextField fullWidth type="date" label="Due Date" value={editTask.dueDate} InputLabelProps={{ shrink: true }} onChange={e => setEditTask({ ...editTask, dueDate: e.target.value })} sx={{ mb: 2 }} />
+                                <TextField fullWidth type="date" label="Due Date" value={editTask.dueDate.split('T')[0]} InputLabelProps={{ shrink: true }} onChange={e => setEditTask({ ...editTask, dueDate: e.target.value })} sx={{ mb: 2 }} />
                                 <TextField fullWidth select label="Assigned To" value={editTask.assignedTo} onChange={e => setEditTask({ ...editTask, assignedTo: e.target.value })} sx={{ mb: 2 }}>
                                   <MenuItem value="u2">u2</MenuItem>
                                   <MenuItem value="u3">u3</MenuItem>
@@ -209,7 +316,6 @@ const Task = () => {
           </Card>
         </Box>
 
-        {/* Right side: Create New Task container */}
         <Box flex={2}>
           <Card sx={{ height: '105%', bgcolor: '#e8dde3' }}>
             <CardContent
@@ -251,9 +357,10 @@ const Task = () => {
                   variant="contained"
                   fullWidth
                   onClick={handleCreateTask}
+                  disabled={loading}
                   sx={{ backgroundColor: '#4f46e5', color: '#fff', '&:hover': { backgroundColor: '#3f3de6' } }}
                 >
-                  Create Task
+                  {loading ? 'Creating...' : 'Create Task'}
                 </Button>
               </Box>
             </CardContent>
