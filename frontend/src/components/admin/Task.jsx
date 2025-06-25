@@ -41,8 +41,20 @@ const Task = () => {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
 
-  // Fetch tasks from backend
-  useEffect(() => {
+  const [recentlyDeleted, setRecentlyDeleted] = useState(null);
+  const [undoTimeout, setUndoTimeout] = useState(null);
+
+  // Cleanup effect for undo timeout
+useEffect(() => {
+  return () => {
+    if (undoTimeout) {
+      clearTimeout(undoTimeout);
+    }
+  };
+}, [undoTimeout]);
+
+// Separate effect for fetching tasks
+useEffect(() => {
     const fetchTasks = async () => {
       setLoading(true);
       try {
@@ -101,25 +113,61 @@ const Task = () => {
   };
 
   const handleDelete = async (index) => {
-    const taskToDelete = filteredTasks[index];
-    try {
-      setLoading(true);
-      const response = await fetch(`http://localhost:4000/api/tasks/${taskToDelete._id}`, {
-        method: 'DELETE',
-      });
+  const taskToDelete = filteredTasks[index];
+  try {
+    setLoading(true);
+    setTasks(prev => prev.filter(task => task._id !== taskToDelete._id));
+    setRecentlyDeleted(taskToDelete);
+    const timeout = setTimeout(() => {
+      setRecentlyDeleted(null);
+      deleteTaskFromBackend(taskToDelete._id);
+    }, 15000);
+    
+    setUndoTimeout(timeout);
+    
+    setSuccess('Task deleted.');
+    
+  } catch (err) {
+    setError(err.message);
+  }
+  finally {
+    setLoading(false);
+  }
+};
 
-      if (!response.ok) {
-        throw new Error('Failed to delete task');
-      }
-
-      setTasks(prev => prev.filter(task => task._id !== taskToDelete._id));
-      setSuccess('Task deleted successfully');
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
+const deleteTaskFromBackend = async (taskId) => {
+  try {
+    const response = await fetch(`http://localhost:4000/api/tasks/${taskId}`, {
+      method: 'DELETE',
+    });
+    if (!response.ok) {
+      throw new Error('Failed to permanently delete task');
     }
-  };
+  } catch (error) {
+    console.error('Permanent deletion error:', error);
+  }
+  
+};
+
+
+const handleUndoDelete = async () => {
+  if (!recentlyDeleted) return;
+  
+  try {
+   
+    setTasks(prev => [...prev, recentlyDeleted]);
+    setRecentlyDeleted(null);
+
+    if (undoTimeout) {
+      clearTimeout(undoTimeout);
+      setUndoTimeout(null);
+    }
+    
+    setSuccess('Task restored successfully');
+  } catch (err) {
+    setError('Failed to undo deletion: ' + err.message);
+  }
+};
 
   const handleEdit = (index) => {
     setEditingIndex(index);
@@ -186,6 +234,30 @@ const Task = () => {
           {success}
         </Alert>
       </Snackbar>
+      
+      {recentlyDeleted && (
+    <Snackbar
+      open={true}
+      autoHideDuration={null}
+      onClose={() => setRecentlyDeleted(null)}
+      anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+    >
+      <Alert 
+        severity="info" 
+        action={
+          <Button 
+            color="inherit" 
+            size="small"
+            onClick={handleUndoDelete}
+          >
+            UNDO
+          </Button>
+        }
+      >
+        Task deleted - Undo available for 15 seconds
+      </Alert>
+    </Snackbar>
+)}
 
       {/* Loading indicator */}
       {loading && (
