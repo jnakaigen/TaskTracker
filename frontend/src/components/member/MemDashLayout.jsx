@@ -25,6 +25,7 @@ import { NavLink } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
 import Button from '@mui/material/Button';
 import LogoutIcon from '@mui/icons-material/Logout';
+import {Outlet} from 'react-router-dom';
 const drawerWidth = 260;
 
 const StyledNavLink = styled(NavLink)(({ theme }) => ({
@@ -213,7 +214,7 @@ const MemDashLayout = ({ children }) => {
           minHeight: 'calc(100vh - 120px)',
           position: 'relative'
         }}>
-          {children}
+          {<Outlet />}
         </Box>
       </Box>
     </Box>

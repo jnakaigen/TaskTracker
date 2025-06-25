@@ -1,0 +1,55 @@
+1st step:
+I created a backend folder.Inside the folder, 
+npm init -y for creating package json,
+npm install express mongoose cors nodemon dotenv bcryptjs jsonwebtoken,
+npm install --save-dev nodemon
+2nd step:
+I created server.js file
+created an env file and modified server.js accordingly
+setting up postman for different routes(get,post,delete,etc) since we only have a get route until now.
+In postman,inside a new collection,i created a new request(get request), added localhost:4000/ as link and pressed send button. it should display the contents of that page. now save it.
+
+3rd step:
+    API Endpoints or Routes
+    GET /tasks         gets all the tasks documents
+    POST /tasks        creates
+    GET /tasks/:id     gets a single task document
+    DELETE /tasks/:id  deletes
+    PATCH /tasks/:id   updates
+
+Now to setup these different routes,create a new folder called routes.
+Create tasks.js inside it
+After making routes inside the task.js,open postman and send GET request, localhost:4000/api/tasks/
+Check if different requests are working and save different requests there.
+
+4th step:
+Now we need to communicate with the database using the routes we made right now.
+We are using mongdodb as database that uses json objects insteaded of tables whch are ordered
+Open mongodb atlas online and create a free databse
+I created a new project named TaskTracker and inside that i created a cluster named MernApp
+username:janakiratheesh
+password:j2a0n0a4ki(no special characters)
+Connection string:mongodb+srv://janakiratheesh:j2a0n0a4ki@mernapp.hg1a8xb.mongodb.net/?retryWrites=true&w=majority&appName=MernApp
+Activate network access. Here, you can either press the current ip or any ip.current ip is gonna give false ip,connection won't work.if you choose any ip option,your connection is gonna work, bu the security will be at risk.hence find your ip address and then paste it in the blank box there manually with a /32(to indicate home address). This way it works.
+
+5th step:
+Go to the .env file and paste the connection string
+We will use mongoose for implementing connection in the server.js file
+We have established a connection,now we need to interact with the db.
+For that, we are gonna use mongoose for getting schema and models for our project 
+Create a Task.js file inside models folder. create a schema and model there.
+move to routes tasks.js file and modify post route.
+open postman.send the existing post request after adding json data on the body
+    we use postman so that backend devs can make sure everything works without the help of frontend.Send requests (GET, POST, PUT, DELETE) to APIs(tasks.js) without writing frontend code.
+    API (Application Programming Interface) refers to the backend routes you've created in Express.js. These routes handle HTTP requests (GET, POST, DELETE, etc.) and interact with your MongoDB database to perform CRUD (Create, Read, Update, Delete) operations on tasks.
+open mongodb.browse collections and you will see a tasks collection automatically created.inside that you will see the single document that you just created using post request.
+    Models Bridge Schemas to MongoDB
+
+6th step:
+Now make a controllers folder,create taskController file in it.
+Remvoed post function and replaced in with taskController
+Controllers are used just for organising the routes
+Note:Always make sure mongodb network is connected.
+Check postman,try to post a new document and get all docs.
+Copy paste id to get a single document
+Check if other id's other than the format outputs an error
