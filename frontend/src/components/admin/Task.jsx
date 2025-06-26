@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Box, Card, CardContent, Typography, TextField, MenuItem,
   Button, Table, TableBody, TableCell, TableContainer, TableHead,
@@ -7,20 +7,10 @@ import {
 import { Edit, Delete, CheckCircle, AccessTime, ErrorOutline } from '@mui/icons-material';
 
 const Task = () => {
-  /*
-  const initialTasks = [
-    { title: "Design Landing Page", description: "Create a modern design for the new homepage.", dueDate: "2025-06-20", assignedTo: "u2", project: "proj1", status: "In Progress" },
-    { title: "Setup Hosting", description: "Set up the website on the new hosting platform.", dueDate: "2025-06-22", assignedTo: "u3", project: "proj1", status: "To Do" },
-    { title: "Implement Mobile Navigation", description: "Ensure responsive navigation for mobile users.", dueDate: "2025-06-25", assignedTo: "u2", project: "proj1", status: "Done" },
-    { title: "Develop Login Flow", description: "Create login and registration flow in the mobile app.", dueDate: "2025-07-01", assignedTo: "u4", project: "proj2", status: "In Progress" },
-    { title: "Push Notifications Setup", description: "Configure FCM and push notification handling.", dueDate: "2025-07-10", assignedTo: "u5", project: "proj2", status: "To Do" },
-    { title: "Build Task Tracker UI", description: "Frontend screens for managing tasks in app.", dueDate: "2025-07-05", assignedTo: "u2", project: "proj2", status: "To Do" },
-    { title: "Write Social Media Captions", description: "Craft engaging captions for campaign posts.", dueDate: "2025-06-10", assignedTo: "u3", project: "proj3", status: "Done" },
-    { title: "Schedule Posts", description: "Use Buffer to schedule all posts across platforms.", dueDate: "2025-06-12", assignedTo: "u5", project: "proj3", status: "In Progress" },
-    { title: "Design Campaign Graphics", description: "Create Instagram and Twitter ad creatives.", dueDate: "2025-06-15", assignedTo: "u4", project: "proj3", status: "To Do" }
-  ];
-*/
+  // State variables
   const [tasks, setTasks] = useState([]);
+  const [projects, setProjects] = useState([]);
+  const [teamMembers, setTeamMembers] = useState([]);
   const [newTask, setNewTask] = useState({
     title: '',
     description: '',
@@ -44,17 +34,25 @@ const Task = () => {
   const [recentlyDeleted, setRecentlyDeleted] = useState(null);
   const [undoTimeout, setUndoTimeout] = useState(null);
 
-  // Cleanup effect for undo timeout
-useEffect(() => {
-  return () => {
-    if (undoTimeout) {
-      clearTimeout(undoTimeout);
-    }
-  };
-}, [undoTimeout]);
+  // Create project map for ID to name conversion
+  const projectMap = useMemo(() => {
+    return projects.reduce((map, project) => {
+      map[project._id] = project.name;
+      return map;
+    }, {});
+  }, [projects]);
 
-// Separate effect for fetching tasks
-useEffect(() => {
+  // Cleanup effect for undo timeout
+  useEffect(() => {
+    return () => {
+      if (undoTimeout) {
+        clearTimeout(undoTimeout);
+      }
+    };
+  }, [undoTimeout]);
+
+  // Fetch tasks
+  useEffect(() => {
     const fetchTasks = async () => {
       setLoading(true);
       try {
@@ -71,6 +69,56 @@ useEffect(() => {
       }
     };
     fetchTasks();
+  }, []);
+
+  // Fetch projects for the current admin
+  useEffect(() => {
+    const fetchProjects = async () => {
+      try {
+        // Get current admin from localStorage
+        const user = JSON.parse(localStorage.getItem('user'));
+        if (!user || user.role !== 'Admin') {
+          setError('Only admins can manage projects');
+          return;
+        }
+        
+        const response = await fetch(`http://localhost:4000/api/projects?adminId=${user.id}`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch projects');
+        }
+        const data = await response.json();
+        setProjects(data);
+      } catch (err) {
+        setError(err.message);
+      }
+    };
+    
+    fetchProjects();
+  }, []);
+
+  // Fetch team members
+  useEffect(() => {
+    const fetchTeamMembers = async () => {
+      try {
+        const response = await fetch('http://localhost:4000/api/users');
+        if (!response.ok) {
+          throw new Error('Failed to fetch users');
+        }
+        const data = await response.json();
+        
+        // Extract all user IDs from both Admin and Member groups
+        const allUserIds = [
+          ...(data.Admin || []).map(user => user.id),
+          ...(data.Member || []).map(user => user.id)
+        ];
+        
+        setTeamMembers(allUserIds);
+      } catch (err) {
+        setError('Failed to load team members: ' + err.message);
+      }
+    };
+
+    fetchTeamMembers();
   }, []);
 
   const filteredTasks = tasks.filter((task) => {
@@ -113,61 +161,58 @@ useEffect(() => {
   };
 
   const handleDelete = async (index) => {
-  const taskToDelete = filteredTasks[index];
-  try {
-    setLoading(true);
-    setTasks(prev => prev.filter(task => task._id !== taskToDelete._id));
-    setRecentlyDeleted(taskToDelete);
-    const timeout = setTimeout(() => {
+    const taskToDelete = filteredTasks[index];
+    try {
+      setLoading(true);
+      setTasks(prev => prev.filter(task => task._id !== taskToDelete._id));
+      setRecentlyDeleted(taskToDelete);
+      const timeout = setTimeout(() => {
+        setRecentlyDeleted(null);
+        deleteTaskFromBackend(taskToDelete._id);
+      }, 15000);
+      
+      setUndoTimeout(timeout);
+      
+      setSuccess('Task deleted.');
+      
+    } catch (err) {
+      setError(err.message);
+    }
+    finally {
+      setLoading(false);
+    }
+  };
+
+  const deleteTaskFromBackend = async (taskId) => {
+    try {
+      const response = await fetch(`http://localhost:4000/api/tasks/${taskId}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) {
+        throw new Error('Failed to permanently delete task');
+      }
+    } catch (error) {
+      console.error('Permanent deletion error:', error);
+    }
+  };
+
+  const handleUndoDelete = async () => {
+    if (!recentlyDeleted) return;
+    
+    try {
+      setTasks(prev => [...prev, recentlyDeleted]);
       setRecentlyDeleted(null);
-      deleteTaskFromBackend(taskToDelete._id);
-    }, 15000);
-    
-    setUndoTimeout(timeout);
-    
-    setSuccess('Task deleted.');
-    
-  } catch (err) {
-    setError(err.message);
-  }
-  finally {
-    setLoading(false);
-  }
-};
 
-const deleteTaskFromBackend = async (taskId) => {
-  try {
-    const response = await fetch(`http://localhost:4000/api/tasks/${taskId}`, {
-      method: 'DELETE',
-    });
-    if (!response.ok) {
-      throw new Error('Failed to permanently delete task');
+      if (undoTimeout) {
+        clearTimeout(undoTimeout);
+        setUndoTimeout(null);
+      }
+      
+      setSuccess('Task restored successfully');
+    } catch (err) {
+      setError('Failed to undo deletion: ' + err.message);
     }
-  } catch (error) {
-    console.error('Permanent deletion error:', error);
-  }
-  
-};
-
-
-const handleUndoDelete = async () => {
-  if (!recentlyDeleted) return;
-  
-  try {
-   
-    setTasks(prev => [...prev, recentlyDeleted]);
-    setRecentlyDeleted(null);
-
-    if (undoTimeout) {
-      clearTimeout(undoTimeout);
-      setUndoTimeout(null);
-    }
-    
-    setSuccess('Task restored successfully');
-  } catch (err) {
-    setError('Failed to undo deletion: ' + err.message);
-  }
-};
+  };
 
   const handleEdit = (index) => {
     setEditingIndex(index);
@@ -236,32 +281,34 @@ const handleUndoDelete = async () => {
       </Snackbar>
       
       {recentlyDeleted && (
-    <Snackbar
-      open={true}
-      autoHideDuration={null}
-      onClose={() => setRecentlyDeleted(null)}
-      anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-    >
-      <Alert 
-        severity="info" 
-        action={
-          <Button 
-            color="inherit" 
-            size="small"
-            onClick={handleUndoDelete}
+        <Snackbar
+          open={true}
+          autoHideDuration={null}
+          onClose={() => setRecentlyDeleted(null)}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        >
+          <Alert 
+            severity="info" 
+            action={
+              <Button 
+                color="inherit" 
+                size="small"
+                onClick={handleUndoDelete}
+              >
+                UNDO
+              </Button>
+            }
           >
-            UNDO
-          </Button>
-        }
-      >
-        Task deleted - Undo available for 15 seconds
-      </Alert>
-    </Snackbar>
-)}
+            Task deleted - Undo available for 15 seconds
+          </Alert>
+        </Snackbar>
+      )}
 
       {/* Loading indicator */}
       {loading && (
-        <Box sx={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.1)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 9999 }}>
+        <Box sx={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, 
+                  backgroundColor: 'rgba(0,0,0,0.1)', display: 'flex', 
+                  justifyContent: 'center', alignItems: 'center', zIndex: 9999 }}>
           <Typography variant="h6">Loading...</Typography>
         </Box>
       )}
@@ -294,27 +341,63 @@ const handleUndoDelete = async () => {
           <Card sx={{ height: '105%', bgcolor: '#e6f0fa' }}>
             <CardContent sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
               <Typography variant="h6" mb={2}><b>All Tasks</b></Typography>
-              <TextField fullWidth placeholder="Search tasks..." value={search} onChange={e => setSearch(e.target.value)} margin="dense" sx={{ bgcolor: 'white', border: '1px solid #aaa', borderRadius: 1 }} />
+              <TextField 
+                fullWidth 
+                placeholder="Search tasks..." 
+                value={search} 
+                onChange={e => setSearch(e.target.value)} 
+                margin="dense" 
+                sx={{ bgcolor: 'white', border: '1px solid #aaa', borderRadius: 1 }} 
+              />
 
               <Box display="flex" gap={2} mt={2} mb={2}>
-                <TextField select label={<b>All Status</b>} value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} size="small" sx={{ flex: 1, bgcolor: 'white', borderRadius: 1, border: '1px solid #aaa' }}>
+                {/* Status Filter */}
+                <TextField 
+                  select 
+                  label={<b>All Status</b>} 
+                  value={statusFilter} 
+                  onChange={(e) => setStatusFilter(e.target.value)} 
+                  size="small" 
+                  sx={{ flex: 1, bgcolor: 'white', borderRadius: 1, border: '1px solid #aaa' }}
+                >
                   <MenuItem value="All">All</MenuItem>
                   <MenuItem value="To Do">To Do</MenuItem>
                   <MenuItem value="In Progress">In Progress</MenuItem>
                   <MenuItem value="Done">Done</MenuItem>
                 </TextField>
-                <TextField select label={<b>All Projects</b>} value={projectFilter} onChange={(e) => setProjectFilter(e.target.value)} size="small" sx={{ flex: 1, bgcolor: 'white', borderRadius: 1, border: '1px solid #aaa' }}>
+                
+                {/* Project Filter */}
+                <TextField 
+                  select 
+                  label={<b>All Projects</b>} 
+                  value={projectFilter} 
+                  onChange={(e) => setProjectFilter(e.target.value)} 
+                  size="small" 
+                  sx={{ flex: 1, bgcolor: 'white', borderRadius: 1, border: '1px solid #aaa' }}
+                >
                   <MenuItem value="All">All</MenuItem>
-                  <MenuItem value="proj1">proj1</MenuItem>
-                  <MenuItem value="proj2">proj2</MenuItem>
-                  <MenuItem value="proj3">proj3</MenuItem>
+                  {projects.map(project => (
+                    <MenuItem key={project._id} value={project._id}>
+                      {project.name}
+                    </MenuItem>
+                  ))}
                 </TextField>
-                <TextField select label={<b>All Team Members</b>} value={memberFilter} onChange={(e) => setMemberFilter(e.target.value)} size="small" sx={{ flex: 1, bgcolor: 'white', borderRadius: 1, border: '1px solid #aaa' }}>
+                
+                {/* Team Member Filter */}
+                <TextField 
+                  select 
+                  label={<b>All Team Members</b>} 
+                  value={memberFilter} 
+                  onChange={(e) => setMemberFilter(e.target.value)} 
+                  size="small" 
+                  sx={{ flex: 1, bgcolor: 'white', borderRadius: 1, border: '1px solid #aaa' }}
+                >
                   <MenuItem value="All">All</MenuItem>
-                  <MenuItem value="u2">u2</MenuItem>
-                  <MenuItem value="u3">u3</MenuItem>
-                  <MenuItem value="u4">u4</MenuItem>
-                  <MenuItem value="u5">u5</MenuItem>
+                  {teamMembers.map(memberId => (
+                    <MenuItem key={memberId} value={memberId}>
+                      {memberId}
+                    </MenuItem>
+                  ))}
                 </TextField>
               </Box>
 
@@ -339,12 +422,16 @@ const handleUndoDelete = async () => {
                           <TableCell>{task.description}</TableCell>
                           <TableCell>{new Date(task.dueDate).toLocaleDateString()}</TableCell>
                           <TableCell>{task.assignedTo}</TableCell>
-                          <TableCell>{task.project}</TableCell>
+                          <TableCell>{projectMap[task.project] || task.project}</TableCell>
                           <TableCell>{task.status}</TableCell>
                           <TableCell>
                             <Stack direction="row" spacing={2}>
-                              <IconButton sx={{ color: 'blue' }} onClick={() => handleEdit(index)}><Edit /></IconButton>
-                              <IconButton onClick={() => handleDelete(index)} sx={{ color: 'red' }}><Delete /></IconButton>
+                              <IconButton sx={{ color: 'blue' }} onClick={() => handleEdit(index)}>
+                                <Edit />
+                              </IconButton>
+                              <IconButton onClick={() => handleDelete(index)} sx={{ color: 'red' }}>
+                                <Delete />
+                              </IconButton>
                             </Stack>
                           </TableCell>
                         </TableRow>
@@ -352,28 +439,78 @@ const handleUndoDelete = async () => {
                           <TableRow>
                             <TableCell colSpan={7}>
                               <Box mt={2} p={2} bgcolor="#fff" border="1px solid #ccc" borderRadius={2}>
-                                <TextField fullWidth label="Title" value={editTask.title} onChange={e => setEditTask({ ...editTask, title: e.target.value })} sx={{ mb: 2 }} />
-                                <TextField fullWidth label="Description" value={editTask.description} onChange={e => setEditTask({ ...editTask, description: e.target.value })} sx={{ mb: 2 }} multiline rows={2} />
-                                <TextField fullWidth type="date" label="Due Date" value={editTask.dueDate.split('T')[0]} InputLabelProps={{ shrink: true }} onChange={e => setEditTask({ ...editTask, dueDate: e.target.value })} sx={{ mb: 2 }} />
-                                <TextField fullWidth select label="Assigned To" value={editTask.assignedTo} onChange={e => setEditTask({ ...editTask, assignedTo: e.target.value })} sx={{ mb: 2 }}>
-                                  <MenuItem value="u2">u2</MenuItem>
-                                  <MenuItem value="u3">u3</MenuItem>
-                                  <MenuItem value="u4">u4</MenuItem>
-                                  <MenuItem value="u5">u5</MenuItem>
+                                <TextField 
+                                  fullWidth 
+                                  label="Title" 
+                                  value={editTask.title} 
+                                  onChange={e => setEditTask({ ...editTask, title: e.target.value })} 
+                                  sx={{ mb: 2 }} 
+                                />
+                                <TextField 
+                                  fullWidth 
+                                  label="Description" 
+                                  value={editTask.description} 
+                                  onChange={e => setEditTask({ ...editTask, description: e.target.value })} 
+                                  sx={{ mb: 2 }} 
+                                  multiline 
+                                  rows={2} 
+                                />
+                                <TextField 
+                                  fullWidth 
+                                  type="date" 
+                                  label="Due Date" 
+                                  value={editTask.dueDate.split('T')[0]} 
+                                  InputLabelProps={{ shrink: true }} 
+                                  onChange={e => setEditTask({ ...editTask, dueDate: e.target.value })} 
+                                  sx={{ mb: 2 }} 
+                                />
+                                <TextField 
+                                  fullWidth 
+                                  select 
+                                  label="Assigned To" 
+                                  value={editTask.assignedTo} 
+                                  onChange={e => setEditTask({ ...editTask, assignedTo: e.target.value })} 
+                                  sx={{ mb: 2 }}
+                                >
+                                  {teamMembers.map(memberId => (
+                                    <MenuItem key={memberId} value={memberId}>
+                                      {memberId}
+                                    </MenuItem>
+                                  ))}
                                 </TextField>
-                                <TextField fullWidth select label="Project" value={editTask.project} onChange={e => setEditTask({ ...editTask, project: e.target.value })} sx={{ mb: 2 }}>
-                                  <MenuItem value="proj1">proj1</MenuItem>
-                                  <MenuItem value="proj2">proj2</MenuItem>
-                                  <MenuItem value="proj3">proj3</MenuItem>
+                                <TextField 
+                                  fullWidth 
+                                  select 
+                                  label="Project" 
+                                  value={editTask.project} 
+                                  onChange={e => setEditTask({ ...editTask, project: e.target.value })} 
+                                  sx={{ mb: 2 }}
+                                >
+                                  {projects.map(project => (
+                                    <MenuItem key={project._id} value={project._id}>
+                                      {project.name}
+                                    </MenuItem>
+                                  ))}
                                 </TextField>
-                                <TextField fullWidth select label="Status" value={editTask.status} onChange={e => setEditTask({ ...editTask, status: e.target.value })} sx={{ mb: 2 }}>
+                                <TextField 
+                                  fullWidth 
+                                  select 
+                                  label="Status" 
+                                  value={editTask.status} 
+                                  onChange={e => setEditTask({ ...editTask, status: e.target.value })} 
+                                  sx={{ mb: 2 }}
+                                >
                                   <MenuItem value="To Do">To Do</MenuItem>
                                   <MenuItem value="In Progress">In Progress</MenuItem>
                                   <MenuItem value="Done">Done</MenuItem>
                                 </TextField>
                                 <Stack direction="row" spacing={2}>
-                                  <Button variant="contained" color="primary" onClick={handleUpdateTask}>Update</Button>
-                                  <Button variant="outlined" color="secondary" onClick={handleCancelEdit}>Cancel</Button>
+                                  <Button variant="contained" color="primary" onClick={handleUpdateTask}>
+                                    Update
+                                  </Button>
+                                  <Button variant="outlined" color="secondary" onClick={handleCancelEdit}>
+                                    Cancel
+                                  </Button>
                                 </Stack>
                               </Box>
                             </TableCell>
@@ -409,19 +546,53 @@ const handleUndoDelete = async () => {
             >
               <Typography variant="h6" mb={2}><b>Create New Task</b></Typography>
 
-              <TextField label={<b>Title</b>} fullWidth value={newTask.title} onChange={e => setNewTask({ ...newTask, title: e.target.value })} />
-              <TextField label={<b>Description</b>} fullWidth multiline rows={3} value={newTask.description} onChange={e => setNewTask({ ...newTask, description: e.target.value })} />
-              <TextField label={<b>Due Date</b>} type="date" fullWidth InputLabelProps={{ shrink: true }} value={newTask.dueDate} onChange={e => setNewTask({ ...newTask, dueDate: e.target.value })} />
-              <TextField select label={<b>Assigned To</b>} fullWidth value={newTask.assignedTo} onChange={e => setNewTask({ ...newTask, assignedTo: e.target.value })}>
-                <MenuItem value="u2">u2</MenuItem>
-                <MenuItem value="u3">u3</MenuItem>
-                <MenuItem value="u4">u4</MenuItem>
-                <MenuItem value="u5">u5</MenuItem>
+              <TextField 
+                label={<b>Title</b>} 
+                fullWidth 
+                value={newTask.title} 
+                onChange={e => setNewTask({ ...newTask, title: e.target.value })} 
+              />
+              <TextField 
+                label={<b>Description</b>} 
+                fullWidth 
+                multiline 
+                rows={3} 
+                value={newTask.description} 
+                onChange={e => setNewTask({ ...newTask, description: e.target.value })} 
+              />
+              <TextField 
+                label={<b>Due Date</b>} 
+                type="date" 
+                fullWidth 
+                InputLabelProps={{ shrink: true }} 
+                value={newTask.dueDate} 
+                onChange={e => setNewTask({ ...newTask, dueDate: e.target.value })} 
+              />
+              <TextField 
+                select 
+                label={<b>Assigned To</b>} 
+                fullWidth 
+                value={newTask.assignedTo} 
+                onChange={e => setNewTask({ ...newTask, assignedTo: e.target.value })}
+              >
+                {teamMembers.map(memberId => (
+                  <MenuItem key={memberId} value={memberId}>
+                    {memberId}
+                  </MenuItem>
+                ))}
               </TextField>
-              <TextField select label={<b>Project</b>} fullWidth value={newTask.project} onChange={e => setNewTask({ ...newTask, project: e.target.value })}>
-                <MenuItem value="proj1">proj1</MenuItem>
-                <MenuItem value="proj2">proj2</MenuItem>
-                <MenuItem value="proj3">proj3</MenuItem>
+              <TextField 
+                select 
+                label={<b>Project</b>} 
+                fullWidth 
+                value={newTask.project} 
+                onChange={e => setNewTask({ ...newTask, project: e.target.value })}
+              >
+                {projects.map(project => (
+                  <MenuItem key={project._id} value={project._id}>
+                    {project.name}
+                  </MenuItem>
+                ))}
               </TextField>
 
               <Box mt="auto">

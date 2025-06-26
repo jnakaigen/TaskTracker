@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Button, 
   FormControl, 
@@ -9,54 +9,82 @@ import {
   Typography,
   Paper,
   Avatar,
-  Divider,
-  Fade
+  Divider
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { LockOutlined } from '@mui/icons-material';
 import { motion } from 'framer-motion';
-
-const usersByRole = {
-  Admin: ['Alice Johnson', 'Bob', 'Charlie'],
-  Member: ['Bob Lee', 'Charlie Smith', 'Diana Prince', 'Ethan Ray'],
-};
 
 const AnimatedButton = motion(Button);
 const AnimatedPaper = motion(Paper);
 
 const Login = () => {
   const navigate = useNavigate();
-  const [role, setRole] = React.useState('');
-  const [name, setName] = React.useState('');
+  const [role, setRole] = useState('');
+  const [userId, setUserId] = useState('');
+  const [users, setUsers] = useState({ Admin: [], Member: [] });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  const handleChange = (event) => {
-    setRole(event.target.value);
-    setName('');
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const response = await fetch('http://localhost:4000/api/users');
+        if (!response.ok) throw new Error('Network response was not ok');
+        const data = await response.json();
+        setUsers({ Admin: data.Admin, Member: data.Member });
+      } catch (err) {
+        setError('Failed to load users. Please try again later.');
+        console.error('Fetch users error:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchUsers();
+  }, []);
+
+  const handleRoleChange = (e) => {
+    setRole(e.target.value);
+    setUserId('');
   };
 
-  const handleNameChange = (event) => {
-    setName(event.target.value);
+  const handleUserChange = (e) => {
+    setUserId(e.target.value);
   };
 
-  const handleLogin = () => {
-    if (role === 'Admin') {
-      navigate('/admdash');
-    } else if (role === 'Member') {
-      navigate('/memdash');
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    if (!role || !userId) return;
+    try {
+      const res = await fetch('http://localhost:4000/api/users/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role, id: userId })
+      });
+      const json = await res.json();
+      if (res.ok) {
+        localStorage.setItem('currentUser', JSON.stringify(json.user));
+        navigate(json.redirectUrl, { state: { user: json.user } });
+      } else {
+        setError(json.error || 'Login failed');
+      }
+    } catch (err) {
+      setError('Login error. Please try again.');
+      console.error('Login error:', err);
     }
   };
 
+  if (loading) return <Typography>Loading...</Typography>;
+
   return (
-    <Box
-      sx={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        p: 2
-      }}
-    >
+    <Box sx={{
+      minHeight: '100vh',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      p: 2
+    }}>
       <AnimatedPaper
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -73,88 +101,81 @@ const Login = () => {
         }}
       >
         <Box sx={{ textAlign: 'center', mb: 3 }}>
-          <Avatar sx={{ 
-            bgcolor: 'primary.main', 
-            width: 60, 
-            height: 60,
-            mx: 'auto',
-            mb: 2
-          }}>
+          <Avatar sx={{ bgcolor: 'primary.main', width: 60, height: 60, mx: 'auto', mb: 2 }}>
             <LockOutlined fontSize="large" />
           </Avatar>
-          <Typography variant="h4" component="h1" fontWeight={700} gutterBottom>
-            Welcome Back
+          <Typography variant="h4" fontWeight={700} gutterBottom>
+            Task Tracker Login
           </Typography>
           <Typography variant="body1" color="text.secondary">
-            Log in to manage your projects and tasks
+            Sign in to access your dashboard
           </Typography>
         </Box>
 
         <Divider sx={{ my: 3 }} />
 
-        <FormControl fullWidth sx={{ mb: 3 }}>
-          <InputLabel id="role-label" sx={{ color: 'text.primary' }}>Role</InputLabel>
-          <Select
-            labelId="role-label"
-            value={role}
-            label="Role"
-            onChange={handleChange}
+        {error && (
+          <Typography color="error" sx={{ mb: 2, textAlign: 'center' }}>
+            {error}
+          </Typography>
+        )}
+
+        <form onSubmit={handleLogin}>
+          <FormControl fullWidth sx={{ mb: 3 }}>
+            <InputLabel id="role-label">Role</InputLabel>
+            <Select
+              labelId="role-label"
+              value={role}
+              label="Role"
+              onChange={handleRoleChange}
+              sx={{ borderRadius: 2 }}
+            >
+              <MenuItem value="Admin">Administrator</MenuItem>
+              <MenuItem value="Member">Team Member</MenuItem>
+            </Select>
+          </FormControl>
+
+          <FormControl fullWidth sx={{ mb: 4 }} disabled={!role}>
+            <InputLabel id="user-label">Name</InputLabel>
+            <Select
+              labelId="user-label"
+              value={userId}
+              label="Name"
+              onChange={handleUserChange}
+              sx={{ borderRadius: 2 }}
+            >
+              {role && users[role].map((u) => (
+                <MenuItem key={u.id} value={u.id}>
+                  {u.name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          <AnimatedButton
+            fullWidth
+            variant="contained"
+            size="large"
+            disabled={!role || !userId}
+            type="submit"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
             sx={{
+              py: 1.5,
               borderRadius: 2,
-              '& .MuiOutlinedInput-notchedOutline': {
-                borderColor: 'rgba(0, 0, 0, 0.1)'
-              }
+              fontWeight: 600,
+              fontSize: 16,
+              textTransform: 'none'
             }}
           >
-            <MenuItem value="Admin">Admin</MenuItem>
-            <MenuItem value="Member">Member</MenuItem>
-          </Select>
-        </FormControl>
-
-        <FormControl fullWidth sx={{ mb: 4 }} disabled={!role}>
-          <InputLabel id="name-label" sx={{ color: 'text.primary' }}>Name</InputLabel>
-          <Select
-            labelId="name-label"
-            value={name}
-            onChange={handleNameChange}
-            label="Name"
-            sx={{
-              borderRadius: 2,
-              '& .MuiOutlinedInput-notchedOutline': {
-                borderColor: 'rgba(0, 0, 0, 0.1)'
-              }
-            }}
-          >
-            {role && usersByRole[role].map((user) => (
-              <MenuItem key={user} value={user}>
-                {user}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-
-        <AnimatedButton
-          fullWidth
-          variant="contained"
-          size="large"
-          disabled={!role || !name}
-          onClick={handleLogin}
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          sx={{
-            py: 1.5,
-            borderRadius: 2,
-            fontWeight: 600,
-            fontSize: 16,
-            textTransform: 'none',
-            boxShadow: '0 4px 14px rgba(0, 118, 255, 0.3)'
-          }}
-        >
-          Log In
-        </AnimatedButton>
+            Sign In
+          </AnimatedButton>
+        </form>
 
         <Typography variant="body2" color="text.secondary" sx={{ mt: 3, textAlign: 'center' }}>
-          Don't have access? Contact your administrator
+          {role === 'Admin'
+            ? 'Administrators can create and manage projects'
+            : 'Team members can view assigned projects and tasks'}
         </Typography>
       </AnimatedPaper>
     </Box>

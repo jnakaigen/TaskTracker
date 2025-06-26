@@ -28,7 +28,7 @@ We are using mongdodb as database that uses json objects insteaded of tables whc
 Open mongodb atlas online and create a free databse
 I created a new project named TaskTracker and inside that i created a cluster named MernApp
 username:janakiratheesh
-password:j2a0n0a4ki(no special characters)
+password:fxKclCZHGN0erLbt(no special characters)
 Connection string:mongodb+srv://janakiratheesh:j2a0n0a4ki@mernapp.hg1a8xb.mongodb.net/?retryWrites=true&w=majority&appName=MernApp
 Activate network access. Here, you can either press the current ip or any ip.current ip is gonna give false ip,connection won't work.if you choose any ip option,your connection is gonna work, bu the security will be at risk.hence find your ip address and then paste it in the blank box there manually with a /32(to indicate home address). This way it works.
 
@@ -53,3 +53,5 @@ Note:Always make sure mongodb network is connected.
 Check postman,try to post a new document and get all docs.
 Copy paste id to get a single document
 Check if other id's other than the format outputs an error
+
+Note:Do not ever accidently put unnecessary spaces in the body of get request in postman.check if its empty before sending request.you might get an error otherwise.
