@@ -1,242 +1,254 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
+import {
+  Box, Card, CardContent, Typography, TextField, MenuItem, Button,
+  Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
+  Paper, Stack, Dialog, DialogTitle, DialogContent, DialogContentText,
+  DialogActions, Select, InputLabel, FormControl, Snackbar, Alert, Grid,LinearProgress
+} from "@mui/material";
 import Chip from "@mui/material/Chip";
-import Dialog from "@mui/material/Dialog";
-import DialogTitle from "@mui/material/DialogTitle";
-import DialogContent from "@mui/material/DialogContent";
-import DialogContentText from "@mui/material/DialogContentText";
-import DialogActions from "@mui/material/DialogActions";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
-import Box from "@mui/material/Box";
-import Card from "@mui/material/Card";
-import Grid from "@mui/material/Grid";
-import CardContent from "@mui/material/CardContent";
-import Typography from "@mui/material/Typography";
-import Select from "@mui/material/Select";
-import MenuItem from "@mui/material/MenuItem";
-import InputLabel from "@mui/material/InputLabel";
-import FormControl from "@mui/material/FormControl";
-import { useState } from "react";
-import TextField from "@mui/material/TextField";
-import Table from "@mui/material/Table";
-import TableBody from "@mui/material/TableBody";
-import TableCell from "@mui/material/TableCell";
-import TableContainer from "@mui/material/TableContainer";
-import TableHead from "@mui/material/TableHead";
-import TableRow from "@mui/material/TableRow";
-import Paper from "@mui/material/Paper";
-import Stack from "@mui/material/Stack";
-import Button from "@mui/material/Button";
 
-// Function to create data for the table
-function createData(
-  id,
-  title,
-  description,
-  start,
-  due,
-  progress,
-  tasks,
-  actions
-) {
-  return { id, title, description, start, due, progress, tasks, actions };
+// Helper to format date for input[type="date"]
+function toInputDate(dateString) {
+  if (!dateString) return "";
+  const date = new Date(dateString);
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const dd = String(date.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
 }
 
 const Project = () => {
-  const [rows, setRows] = useState([
-    createData(
-      1,
-      "Webste Revamp",
-      "At Risk",
-      "2025-06-01",
-      "2025-07-15",
-      "null",
-      "7/20",
-      "..."
-    ),
-    createData(
-      2,
-      "Mobile App",
-      "In progress",
-      "2025-06-10",
-      "2025-08-01",
-      "null",
-      "14/20",
-      "..."
-    ),
-    createData(
-      3,
-      "Marketing campaign",
-      "Completed",
-      "2025-06-05",
-      "2025-06-30",
-      "null",
-      "20/20",
-      "..."
-    ),
-    createData(
-      4,
-      "Product Launch",
-      "Completed",
-      "2025-07-01",
-      "2025-09-01",
-      "null",
-      "20/20",
-      "..."
-    ),
-    createData(
-      5,
-      "Project 5",
-      "In progress",
-      "2025-06-01",
-      "2025-07-15",
-      "null",
-      "15/20",
-      "..."
-    ),
-    createData(
-      6,
-      "Project 6",
-      "At Risk",
-      "2025-06-15",
-      "2025-08-11",
-      "null",
-      "15/20",
-      "..."
-    ),
-  ]);
-  //to add&edit
+  // State
+  const [rows, setRows] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
+
+  // Add/Edit dialog state
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [editRow, setEditRow] = useState(null);
+  const [editId, setEditId] = useState("");
+  const [editTitle, setEditTitle] = useState("");
+  const [editStatus, setEditStatus] = useState("");
+  const [editStart, setEditStart] = useState("");
+  const [editDue, setEditDue] = useState("");
+  const [editTasks, setEditTasks] = useState("");
+
+  // Delete dialog state
+  const [openDialog, setOpenDialog] = useState(false);
+  const [selectedRow, setSelectedRow] = useState(null);
+
+  // Search/sort
+  const [search, setSearch] = useState("");
+  const [sortBy, setSortBy] = useState("");
+
+  // Fetch projects
+  useEffect(() => {
+    const fetchProjects = async () => {
+      setLoading(true);
+      try {
+        const response = await fetch("http://localhost:4000/api/projects");
+        if (!response.ok) throw new Error("Failed to fetch projects");
+        const data = await response.json();
+        setRows(data);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProjects();
+  }, []);
+
+  // Add Project
   const handleAddClick = () => {
     setIsEditMode(false);
     setEditRow(null);
+    setEditId("");
     setEditTitle("");
-    setEditDescription("");
+    setEditStatus("");
     setEditStart("");
     setEditDue("");
     setEditTasks("");
     setDialogOpen(true);
   };
 
-  //Handle Edit
-  const [editRow, setEditRow] = useState(null);
-  const [editTitle, setEditTitle] = useState("");
-  const [editDescription, setEditDescription] = useState("");
-  const [editStart, setEditStart] = useState("");
-  const [editDue, setEditDue] = useState("");
-  const [editTasks, setEditTasks] = useState("");
-
+  // Edit Project
   const handleEditClick = (row) => {
     setIsEditMode(true);
     setEditRow(row);
-    setEditTitle(row.title);
-    setEditDescription(row.description);
-    setEditStart(row.start);
-    setEditDue(row.due);
-    setEditTasks(row.tasks);
+    setEditId(row.id || "");
+    setEditTitle(row.title || "");
+    setEditStatus(row.status || "");
+    setEditStart(toInputDate(row.startDate));
+    setEditDue(toInputDate(row.dueDate));
+    setEditTasks(row.tasks || "");
     setDialogOpen(true);
   };
-  //Save Handler
-  const handleDialogSave = () => {
-    if (isEditMode) {
-      setRows((prevRows) =>
-        prevRows.map((row) =>
-          row.id === editRow.id
-            ? {
-                ...row,
-                title: editTitle,
-                description: editDescription,
-                start: editStart,
-                due: editDue,
-                tasks: editTasks,
-              }
-            : row
-        )
-      );
-    } else {
-      const newId =
-        rows.length > 0 ? Math.max(...rows.map((r) => r.id)) + 1 : 1;
-      setRows([
-        ...rows,
-        {
-          id: newId,
-          title: editTitle,
-          description: editDescription,
-          start: editStart,
-          due: editDue,
-          progress: "null",
-          tasks: editTasks,
-          actions: "...",
-        },
-      ]);
+
+  // Save (Add/Edit)
+  const handleDialogSave = async () => {
+    if (
+      !editId.trim() ||
+      !editTitle.trim() ||
+      !editStatus.trim() ||
+      !editStart.trim() ||
+      !editDue.trim() ||
+      !editTasks.trim()
+    ) {
+      setError("All fields are required.");
+      return;
     }
-    setDialogOpen(false);
+    if (!isEditMode && rows.some((row) => row.id === editId)) {
+      setError("ID must be unique!");
+      return;
+    }
+    setLoading(true);
+    try {
+      if (isEditMode) {
+        // Update
+        const response = await fetch(
+          `http://localhost:4000/api/projects/${editRow._id}`,
+          {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              id: editId,
+              title: editTitle,
+              status: editStatus,
+              startDate: editStart,
+              dueDate: editDue,
+              tasks: editTasks,
+            }),
+          }
+        );
+        if (!response.ok) throw new Error("Failed to update project");
+        const updated = await response.json();
+        setRows((prev) =>
+          prev.map((row) => (row._id === updated._id ? updated : row))
+        );
+        setSuccess("Project updated successfully");
+      } else {
+        // Create
+        const response = await fetch("http://localhost:4000/api/projects", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id: editId,
+            title: editTitle,
+            status: editStatus,
+            startDate: editStart,
+            dueDate: editDue,
+            tasks: editTasks,
+          }),
+        });
+        if (!response.ok) throw new Error("Failed to create project");
+        const created = await response.json();
+        setRows((prev) => [...prev, created]);
+        setSuccess("Project created successfully");
+      }
+      setDialogOpen(false);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  //Handle Delete
-  const [openDialog, setOpenDialog] = useState(false);
-  const [selectedRow, setSelectedRow] = useState(null);
+  // Delete
   const handleDeleteClick = (row) => {
     setSelectedRow(row);
     setOpenDialog(true);
   };
-
-  const handleConfirmDelete = () => {
-    setRows((prevRows) => prevRows.filter((row) => row.id !== selectedRow.id));
-    setOpenDialog(false);
+  const handleConfirmDelete = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch(
+        `http://localhost:4000/api/projects/${selectedRow._id}`,
+        { method: "DELETE" }
+      );
+      if (!response.ok) throw new Error("Failed to delete project");
+      setRows((prevRows) =>
+        prevRows.filter((row) => row._id !== selectedRow._id)
+      );
+      setSuccess("Project deleted");
+      setOpenDialog(false);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
+  const handleCancel = () => setOpenDialog(false);
 
-  const handleCancel = () => {
-    setOpenDialog(false);
-  };
-
-  const [search, setSearch] = useState("");
-  const [sortBy, setSortBy] = useState("");
+  // Filter and sort
   let filteredRows = rows.filter((row) =>
     row.title.toLowerCase().includes(search.toLowerCase())
   );
-  //Check if form is valid
-  const isFormValid =
-    editTitle.trim() !== "" &&
-    editDescription.trim() !== "" &&
-    editStart.trim() !== "" &&
-    editDue.trim() !== "" &&
-    editTasks.trim() !== "";
-
-  // Sort the filtered rows based on the selected sort option
   filteredRows = [...filteredRows].sort((a, b) => {
-    if (sortBy === "title") {
-      return a.title.localeCompare(b.title);
-    }
-    if (sortBy === "start") {
-      return a.start.localeCompare(b.start);
-    }
-    if (sortBy === "due") {
-      return a.due.localeCompare(b.due);
-    }
+    if (sortBy === "title") return a.title.localeCompare(b.title);
+    if (sortBy === "startDate") return a.startDate.localeCompare(b.startDate);
+    if (sortBy === "dueDate") return a.dueDate.localeCompare(b.dueDate);
     return 0;
   });
 
+  // Form validation
+  const isFormValid =
+    editId.trim() &&
+    editTitle.trim() &&
+    editStatus.trim() &&
+    editStart.trim() &&
+    editDue.trim() &&
+    editTasks.trim();
+
+  // Date display for table
+  function formatDate(dateString) {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-GB");
+  }
+
+  // Snackbar close
+  const handleCloseSnackbar = () => {
+    setError(null);
+    setSuccess(null);
+  };
+
+  // Loading indicator
+  if (loading) {
+    return (
+      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "60vh" }}>
+        <Typography variant="h6">Loading projects...</Typography>
+      </Box>
+    );
+  }
+  if (error) {
+    // Show error as snackbar
+    return (
+      <Snackbar open={!!error} autoHideDuration={6000} onClose={handleCloseSnackbar}>
+        <Alert onClose={handleCloseSnackbar} severity="error" sx={{ width: '100%' }}>
+          {error}
+        </Alert>
+      </Snackbar>
+    );
+  }
+
   return (
-    <Box
-      style={{
-        background: "#ffffff",
-        minHeight: "100vh",
-        padding: "24px",
-      }}
-    >
+    <Box sx={{ bgcolor: "#fff", minHeight: "100vh", p: 3 }}>
       <Typography
-        style={{
+        sx={{
           background: "linear-gradient(90deg, #1e3a8a, #3b82f6)",
           WebkitBackgroundClip: "text",
           WebkitTextFillColor: "transparent",
           color: "transparent",
           fontWeight: 700,
           fontSize: "3rem",
-          padding: "16px",
+          p: 2,
           borderRadius: "8px",
-          margin: 0,
+          m: 0,
           display: "inline-block",
           backgroundColor: "#fff",
         }}
@@ -244,119 +256,56 @@ const Project = () => {
         <b>Project Management</b>
       </Typography>
 
-      <Grid
-        paddingTop={10}
-        paddingBottom={10}
-        container
-        spacing={10}
-        justifyContent="center"
-        alignItems="center"
-        sx={{ mb: 3 }}
-      >
+      {/* Success Snackbar */}
+      <Snackbar open={!!success} autoHideDuration={6000} onClose={handleCloseSnackbar}>
+        <Alert onClose={handleCloseSnackbar} severity="success" sx={{ width: '100%' }}>
+          {success}
+        </Alert>
+      </Snackbar>
+
+      <Grid container gap={4} justifyContent="center" alignItems="center" sx={{ mb: 3, pt: 10, pb: 10 }}>
         <Grid item xs={12} md={4}>
-          <Card
-            sx={{
-              backgroundColor: "#fff",
-              boxShadow: "0 2px 8px rgba(30, 58, 138, 0.08)",
-              borderRadius: "16px",
-              minHeight: 180,
-              minWidth: 180,
-              p: 2,
-            }}
-          >
+          <Card sx={{ bgcolor: "#fff", boxShadow: "0 2px 8px rgba(30, 58, 138, 0.08)", borderRadius: "16px", minHeight: 180, minWidth: 180, p: 2 }}>
             <CardContent>
-              <Typography paddingBottom={3.8} variant="h6">
-                Total Projects
-              </Typography>
+              <Typography pb={3.8} variant="h6">Total Projects</Typography>
+              <Typography variant="h4"><b>{rows.length}</b></Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} md={4}>
+          <Card sx={{ bgcolor: "#fff", boxShadow: "0 2px 8px rgba(30, 58, 138, 0.08)", borderRadius: "16px", minHeight: 180, minWidth: 180, p: 2 }}>
+            <CardContent>
+              <Typography pb={3.8} variant="h6">In Progress</Typography>
               <Typography variant="h4">
-                <b>{rows.length}</b>
+                <b>{rows.filter((row) => row.status === "In Progress").length}</b>
               </Typography>
             </CardContent>
           </Card>
         </Grid>
         <Grid item xs={12} md={4}>
-          <Card
-            sx={{
-              backgroundColor: "#fff",
-              boxShadow: "0 2px 8px rgba(30, 58, 138, 0.08)",
-              borderRadius: "16px",
-              minHeight: 180,
-              minWidth: 180,
-              p: 2,
-            }}
-          >
+          <Card sx={{ bgcolor: "#fff", boxShadow: "0 2px 8px rgba(30, 58, 138, 0.08)", borderRadius: "16px", minHeight: 180, minWidth: 180, p: 2 }}>
             <CardContent>
-              <Typography paddingBottom={3.8} variant="h6">
-                In Progress
-              </Typography>
+              <Typography pb={3.8} variant="h6">Done</Typography>
               <Typography variant="h4">
-                <b>
-                  {
-                    rows.filter((row) => row.description === "In progress")
-                      .length
-                  }
-                </b>
+                <b>{rows.filter((row) => row.status === "Done").length}</b>
               </Typography>
             </CardContent>
           </Card>
         </Grid>
         <Grid item xs={12} md={4}>
-          <Card
-            sx={{
-              backgroundColor: "#fff",
-              boxShadow: "0 2px 8px rgba(30, 58, 138, 0.08)",
-              borderRadius: "16px",
-              minHeight: 180,
-              minWidth: 180,
-              p: 2,
-            }}
-          >
+          <Card sx={{ bgcolor: "#fff", boxShadow: "0 2px 8px rgba(0, 0, 0, 0.08)", borderRadius: "16px", minHeight: 180, minWidth: 180, p: 2 }}>
             <CardContent>
-              <Typography paddingBottom={3.8} variant="h6">
-                Completed
-              </Typography>
+              <Typography pb={3.8} variant="h6">Projects To Do</Typography>
               <Typography variant="h4">
-                <b>
-                  {rows.filter((row) => row.description === "Completed").length}
-                </b>
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} md={4}>
-          <Card
-            sx={{
-              backgroundColor: "#fff",
-              boxShadow: "0 2px 8px rgba(0, 0, 0, 0.08)",
-              borderRadius: "16px",
-              minHeight: 180,
-              minWidth: 180,
-              p: 2,
-            }}
-          >
-            <CardContent>
-              <Typography paddingBottom={3.8} variant="h6">
-                Projects At Risk
-              </Typography>
-              <Typography variant="h4">
-                <b>
-                  {rows.filter((row) => row.description === "At Risk").length}
-                </b>
+                <b>{rows.filter((row) => row.status === "To Do").length}</b>
               </Typography>
             </CardContent>
           </Card>
         </Grid>
       </Grid>
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          mb: 2,
-          mt: 2,
-        }}
-      >
-        <h2 style={{ margin:0, marginLeft: 5,fontSize: "2rem" }}>All Projects</h2>
+
+      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2, mt: 2 }}>
+        <h2 style={{ margin: 0, marginLeft: 5, fontSize: "2rem" }}>All Projects</h2>
         <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
           <Button
             variant="contained"
@@ -370,7 +319,7 @@ const Project = () => {
             }}
             onClick={handleAddClick}
           >
-           Add Project 
+            Add Project
           </Button>
           <TextField
             label="Filter Projects..."
@@ -379,16 +328,12 @@ const Project = () => {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             sx={{
-              backgroundColor: "#fff",
+              bgcolor: "#fff",
               borderRadius: "8px",
               "& .MuiInputLabel-root": { color: "grey" },
             }}
           />
-          <FormControl
-            size="small"
-            sx={{ backgroundColor: "#fff", borderRadius: "8px" }}
-            variant="outlined"
-          >
+          <FormControl size="small" sx={{ bgcolor: "#fff", borderRadius: "8px" }} variant="outlined">
             <Select
               value={sortBy}
               displayEmpty
@@ -399,27 +344,24 @@ const Project = () => {
                   : () => <span style={{ color: "#aaa" }}>Sort By</span>
               }
             >
-              <MenuItem value="" disabled>
-                Sort By
-              </MenuItem>
+              <MenuItem value="" disabled>Sort By</MenuItem>
               <MenuItem value="title">Title</MenuItem>
-              <MenuItem value="start">Start Date</MenuItem>
-              <MenuItem value="due">Due Date</MenuItem>
+              <MenuItem value="startDate">Start Date</MenuItem>
+              <MenuItem value="dueDate">Due Date</MenuItem>
             </Select>
           </FormControl>
         </Box>
       </Box>
+
       <TableContainer component={Paper}>
         <Table sx={{ minWidth: 600 }} aria-label="simple table">
-          <TableHead sx={{ backgroundColor: "#e0e7ef" }}>
-            <TableRow
-              sx={{ background: "#f9f9f9", textShadow: "0 0 0.5px #000" }}
-            >
+          <TableHead sx={{ bgcolor: "#e0e7ef" }}>
+            <TableRow sx={{ background: "#f9f9f9", textShadow: "0 0 0.5px #000" }}>
               <TableCell>Title</TableCell>
               <TableCell align="center">Status</TableCell>
-              <TableCell align="right"> Start Date</TableCell>
+              <TableCell align="right">Start Date</TableCell>
               <TableCell align="right">Due Date</TableCell>
-              <TableCell align="right">Progress</TableCell>
+              <TableCell align="center">Progress</TableCell>
               <TableCell align="right">Tasks</TableCell>
               <TableCell align="center">Actions</TableCell>
             </TableRow>
@@ -427,22 +369,20 @@ const Project = () => {
           <TableBody>
             {filteredRows.map((row) => (
               <TableRow
-                key={row.id}
+                key={row._id}
                 sx={{
                   "&:hover": { backgroundColor: "#f5f7fa" },
                   "&:last-child td, &:last-child th": { border: 0 },
                 }}
               >
-                <TableCell component="th" scope="row">
-                  {row.title}
-                </TableCell>
+                <TableCell component="th" scope="row">{row.title}</TableCell>
                 <TableCell align="center">
                   <Chip
-                    label={row.description}
+                    label={row.status}
                     color={
-                      row.description === "Completed"
+                      row.status === "Done"
                         ? "success"
-                        : row.description === "At Risk"
+                        : row.status === "To Do"
                         ? "error"
                         : "primary"
                     }
@@ -452,34 +392,51 @@ const Project = () => {
                       fontWeight: 600,
                       letterSpacing: 0.5,
                       bgcolor:
-                        row.description === "Completed"
+                        row.status === "Done"
                           ? "#22c55e22"
-                          : row.description === "At Risk"
+                          : row.status === "To Do"
                           ? "#ef444422"
                           : "#3b82f622",
                       color:
-                        row.description === "Completed"
+                        row.status === "Done"
                           ? "#16a34a"
-                          : row.description === "At Risk"
+                          : row.status === "To Do"
                           ? "#b91c1c"
                           : "#1d4ed8",
                       border: "none",
                     }}
                   />
                 </TableCell>
-                <TableCell align="right">{row.start}</TableCell>
-                <TableCell align="right">{row.due}</TableCell>
-                <TableCell align="right">
-                  {(() => {
-                    const [completed, total] = row.tasks.split("/").map(Number);
-                    if (!total) return "0%";
-                    const percent = Math.round((completed / total) * 100);
-                    return `${percent}%`;
-                  })()}
-                </TableCell>
+                <TableCell align="right">{formatDate(row.startDate)}</TableCell>
+                <TableCell align="right">{formatDate(row.dueDate)}</TableCell>
+<TableCell align="right">
+  {(() => {
+    const [completed, total] = row.tasks.split("/").map(Number);
+    const percent = total ? Math.round((completed / total) * 100) : 0;
+    return (
+      <Box sx={{ minWidth: 80 }}>
+        <LinearProgress
+          variant="determinate"
+          value={percent}
+          sx={{
+            height: 8,
+            borderRadius: 5,
+            backgroundColor: "#e0e7ef",
+            "& .MuiLinearProgress-bar": {
+              backgroundColor: "#6366f1"
+            }
+          }}
+        />
+        <Typography variant="body2" align="center" sx={{ mt: 0.5 }}>
+          {percent}%
+        </Typography>
+      </Box>
+    );
+  })()}
+</TableCell>
                 <TableCell align="right">{row.tasks}</TableCell>
                 <TableCell align="right">
-                  <Stack spacing={5} direction="row" justifyContent="center">
+                  <Stack spacing={2} direction="row" justifyContent="center">
                     <Button
                       size="small"
                       variant="contained"
@@ -509,7 +466,8 @@ const Project = () => {
           </TableBody>
         </Table>
       </TableContainer>
-      {/* Dialog for confirmation of deletion */}
+
+      {/* Delete Confirmation Dialog */}
       <Dialog open={openDialog} onClose={handleCancel}>
         <DialogTitle>Confirm Delete</DialogTitle>
         <DialogContent>
@@ -519,39 +477,44 @@ const Project = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCancel}>Cancel</Button>
-          <Button
-            onClick={handleConfirmDelete}
-            color="error"
-            variant="contained"
-          >
+          <Button onClick={handleConfirmDelete} color="error" variant="contained">
             Delete
           </Button>
         </DialogActions>
       </Dialog>
-      {/* Dialog for editing a project */}
+
+      {/* Add/Edit Project Dialog */}
       <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)}>
         <DialogTitle>
           {isEditMode ? "Edit Project" : "Add New Project"}
         </DialogTitle>
         <DialogContent>
           <TextField
-            borderRadius={8}
+            margin="dense"
+            label="ID"
+            fullWidth
+            value={editId}
+            onChange={(e) => setEditId(e.target.value)}
+            sx={{ mb: 2 }}
+          />
+          <TextField
             margin="dense"
             label="Title"
             fullWidth
             value={editTitle}
             onChange={(e) => setEditTitle(e.target.value)}
+            sx={{ mb: 2 }}
           />
-          <FormControl fullWidth margin="dense">
+          <FormControl fullWidth margin="dense" sx={{ mb: 2 }}>
             <InputLabel>Status</InputLabel>
             <Select
-              value={editDescription}
+              value={editStatus}
               label="Status"
-              onChange={(e) => setEditDescription(e.target.value)}
+              onChange={(e) => setEditStatus(e.target.value)}
             >
-              <MenuItem value="In progress">In progress</MenuItem>
-              <MenuItem value="Completed">Completed</MenuItem>
-              <MenuItem value="At Risk">At Risk</MenuItem>
+              <MenuItem value="In Progress">In Progress</MenuItem>
+              <MenuItem value="Done">Done</MenuItem>
+              <MenuItem value="To Do">To Do</MenuItem>
             </Select>
           </FormControl>
           <TextField
@@ -562,6 +525,7 @@ const Project = () => {
             value={editStart}
             onChange={(e) => setEditStart(e.target.value)}
             InputLabelProps={{ shrink: true }}
+            sx={{ mb: 2 }}
           />
           <TextField
             label="Due Date"
@@ -571,6 +535,7 @@ const Project = () => {
             fullWidth
             margin="dense"
             InputLabelProps={{ shrink: true }}
+            sx={{ mb: 2 }}
           />
           <TextField
             margin="dense"
@@ -578,6 +543,7 @@ const Project = () => {
             fullWidth
             value={editTasks}
             onChange={(e) => setEditTasks(e.target.value)}
+            sx={{ mb: 2 }}
           />
         </DialogContent>
         <DialogActions>
