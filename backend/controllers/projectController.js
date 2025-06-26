@@ -18,15 +18,15 @@ const getProject = async (req, res) => {
 
 // Create a new project
 const createProject = async (req, res) => {
-    const {id, title, status, startDate, dueDate, tasks} = req.body;
-    console.log("Received body:", req.body); // <-- Add this
+    const {id, pid, title, status, startDate, dueDate, tasks} = req.body;
     try {
-        const project = await Project.create({id, title, status, startDate, dueDate, tasks});
+        const project = await Project.create({id, pid, title, status, startDate, dueDate, tasks});
         res.status(200).json(project);
     } catch (error) {
         res.status(400).json({error: error.message});
     }
 }
+
 
 // Delete a project
 const deleteProject = async (req, res) => {
@@ -42,7 +42,11 @@ const updateProject = async (req, res) => {
     try {
         const { id } = req.params;
         if (!mongoose.Types.ObjectId.isValid(id)) return res.status(404).json({message: 'Invalid ID'});
-        const project = await Project.findOneAndUpdate({_id: id}, {...req.body}, { new: true });
+        const project = await Project.findOneAndUpdate(
+            {_id: id},
+            { ...req.body }, // This will update pid if present in req.body
+            { new: true }
+        );
         if (!project) return res.status(404).json({message: 'Project not found'});
         res.status(200).json(project);
     } catch (error) {
