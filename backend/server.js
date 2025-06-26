@@ -3,7 +3,7 @@ require('dotenv').config()
 
 //5th step=>import routes 
 const tasksRoutes = require('./routes/tasks')
-
+const usersRoutes = require('./routes/users')
 //7th step=> import mongoose for database connection
 const mongoose = require('mongoose')
 
@@ -25,7 +25,7 @@ app.use((req, res, next) => {
 })
 //5th step=>use tasks routes
 app.use('/api/tasks',tasksRoutes)
-
+app.use('/api/users',usersRoutes) //add users routes
 //2nd step=>message visible in browser(route)
 /*app.get('/',(req,res)=>{//this is a middleware function,req=>request object,res=>response object
     res.json({

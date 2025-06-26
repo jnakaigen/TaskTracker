@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Grid,
@@ -24,59 +23,71 @@ import {
   Comment
 } from '@mui/icons-material';
 
+// Updated projects with admin assignments
 const projects = [
   {
     id: 'proj1',
-    title: 'Website Revamp',
+    title: 'Project 1',
     description: 'Revamping the company website with modern UI/UX.',
     startDate: '2025-06-01',
     endDate: '2025-07-15',
-    color: '#6366F1'
+    color: '#6366F1',
+    admin: 'Greg',
+    members: ['John', 'Luis', 'Chris']
   },
   {
     id: 'proj2',
-    title: 'Mobile App Launch',
+    title: 'Project 2',
     description: 'Develop and launch the mobile application.',
     startDate: '2025-06-10',
     endDate: '2025-08-01',
-    color: '#10B981'
+    color: '#10B981',
+    admin: 'Greg',
+    members: ['Eden', 'John', 'Alice']
   },
   {
     id: 'proj3',
-    title: 'Marketing Campaign',
+    title: 'Project 3',
     description: 'Summer marketing campaign for user engagement.',
     startDate: '2025-06-05',
     endDate: '2025-06-30',
-    color: '#3B82F6'
+    color: '#3B82F6',
+    admin: 'Pen',
+    members: ['John', 'Alice', 'Luis', 'Jack']
   },
 ];
 
+// Updated team members with consistent naming
 const teamMembers = [
-  { id: 'u1', name: 'Alice Johnson', email: 'alice@example.com', role: 'Admin', avatar: 'AJ' },
-  { id: 'u2', name: 'Bob Lee', email: 'bob@example.com', role: 'Designer', avatar: 'BL' },
-  { id: 'u3', name: 'Charlie Smith', email: 'charlie@example.com', role: 'Developer', avatar: 'CS' },
-  { id: 'u4', name: 'Diana Prince', email: 'diana@example.com', role: 'Marketing', avatar: 'DP' },
-  { id: 'u5', name: 'Ethan Ray', email: 'ethan@example.com', role: 'Developer', avatar: 'ER' },
+  { id: 'u1', name: 'John', email: 'john@example.com', role: 'Developer', avatar: 'J' },
+  { id: 'u2', name: 'Luis', email: 'luis@example.com', role: 'Designer', avatar: 'L' },
+  { id: 'u3', name: 'Chris', email: 'chris@example.com', role: 'Developer', avatar: 'C' },
+  { id: 'u4', name: 'Eden', email: 'eden@example.com', role: 'Developer', avatar: 'E' },
+  { id: 'u5', name: 'Alice', email: 'alice@example.com', role: 'Marketing', avatar: 'A' },
+  { id: 'u6', name: 'Jack', email: 'jack@example.com', role: 'Marketing', avatar: 'J' },
+  { id: 'u7', name: 'Greg', email: 'greg@example.com', role: 'Admin', avatar: 'G' },
+  { id: 'u8', name: 'Pen', email: 'pen@example.com', role: 'Admin', avatar: 'P' },
 ];
 
+// Updated tasks with consistent naming
 const tasks = [
   {
     id: 't1',
     title: 'Design Landing Page',
     description: 'Create modern design for the new homepage with responsive elements.',
     dueDate: '2025-06-20',
-    assignedTo: 'u2',
+    assignedTo: 'u2', // Luis
     project: 'proj1',
     status: 'In Progress',
     priority: 'High',
-    comments: ['Mockups done. Need feedback from Alice.']
+    comments: ['Mockups done. Need feedback from Greg.']
   },
   {
     id: 't2',
     title: 'Setup Hosting',
     description: 'Migrate website to new cloud hosting platform with CI/CD pipeline.',
     dueDate: '2025-06-22',
-    assignedTo: 'u3',
+    assignedTo: 'u1', // John
     project: 'proj1',
     status: 'To Do',
     priority: 'Medium',
@@ -87,7 +98,7 @@ const tasks = [
     title: 'Implement Mobile Navigation',
     description: 'Responsive navigation with accessibility features for mobile.',
     dueDate: '2025-06-25',
-    assignedTo: 'u2',
+    assignedTo: 'u3', // Chris
     project: 'proj1',
     status: 'Done',
     priority: 'Medium',
@@ -98,7 +109,7 @@ const tasks = [
     title: 'Develop Login Flow',
     description: 'OAuth integration with social login options.',
     dueDate: '2025-07-01',
-    assignedTo: 'u4',
+    assignedTo: 'u4', // Eden
     project: 'proj2',
     status: 'In Progress',
     priority: 'High',
@@ -109,7 +120,7 @@ const tasks = [
     title: 'Push Notifications Setup',
     description: 'Configure FCM and implement notification center.',
     dueDate: '2025-07-10',
-    assignedTo: 'u5',
+    assignedTo: 'u5', // Alice
     project: 'proj2',
     status: 'To Do',
     priority: 'Low',
@@ -120,8 +131,8 @@ const tasks = [
     title: 'Build Task Tracker UI',
     description: 'Interactive task management interface with drag-and-drop.',
     dueDate: '2025-07-05',
-    assignedTo: 'u2',
-    project: 'proj2',
+    assignedTo: 'u1', // John
+    project: 'proj3',
     status: 'To Do',
     priority: 'Medium',
     comments: []
@@ -131,7 +142,7 @@ const tasks = [
     title: 'Write Social Media Captions',
     description: 'Engaging copy for Instagram, Twitter, and LinkedIn.',
     dueDate: '2025-06-10',
-    assignedTo: 'u3',
+    assignedTo: 'u6', // Jack
     project: 'proj3',
     status: 'Done',
     priority: 'Low',
@@ -142,23 +153,12 @@ const tasks = [
     title: 'Schedule Posts',
     description: 'Automated scheduling across all platforms with analytics.',
     dueDate: '2025-06-12',
-    assignedTo: 'u5',
+    assignedTo: 'u5', // Alice
     project: 'proj3',
     status: 'In Progress',
     priority: 'Medium',
     comments: []
-  },
-  {
-    id: 't9',
-    title: 'Design Campaign Graphics',
-    description: 'Social media creatives with brand consistency.',
-    dueDate: '2025-06-15',
-    assignedTo: 'u4',
-    project: 'proj3',
-    status: 'To Do',
-    priority: 'High',
-    comments: []
-  },
+  }
 ];
 
 const statusColors = {
@@ -177,26 +177,83 @@ const AdmDash = () => {
   const theme = useTheme();
   const [selectedProject, setSelectedProject] = useState('');
   const [selectedMember, setSelectedMember] = useState('');
+  const [currentUser, setCurrentUser] = useState(null);
+  const [userProjects, setUserProjects] = useState([]);
+  const [userTasks, setUserTasks] = useState([]);
+  const [userTeamMembers, setUserTeamMembers] = useState([]);
 
-  const getProjectTitle = (id) => projects.find(p => p.id === id)?.title || 'Unknown'; //Searches the projects array for an item where id matches the input. If found, returns the title property. If not found, returns 'Unknown' as a fallback
-  const getMemberName = (id) => teamMembers.find(m => m.id === id)?.name || 'Unassigned'; 
-  const getMemberAvatar = (id) => teamMembers.find(m => m.id === id)?.avatar || '?';
-  const getProjectColor = (id) => projects.find(p => p.id === id)?.color || '#999';
+  useEffect(() => {
+    // Get current user from localStorage
+    const storedUser = JSON.parse(localStorage.getItem('currentUser'));
+    if (storedUser) {
+      setCurrentUser(storedUser);
+      
+      // Filter projects based on current user
+      const userProjects = storedUser.role === 'Admin'
+        ? projects.filter(proj => proj.admin === storedUser.name)
+        : projects.filter(proj => proj.members.includes(storedUser.name));
+      
+      setUserProjects(userProjects);
+      
+      // Get project IDs for task filtering
+      const projectIds = userProjects.map(p => p.id);
+      
+      // Filter tasks based on user's projects
+      const userTasks = tasks.filter(task => 
+        projectIds.includes(task.project)
+      );
+      setUserTasks(userTasks);
+      
+      // Get team members from user's projects
+      const memberNames = new Set();
+      userProjects.forEach(proj => {
+        proj.members.forEach(member => memberNames.add(member));
+      });
+      
+      // Convert names to team member objects
+      const userTeamMembers = teamMembers.filter(member => 
+        memberNames.has(member.name) || member.name === storedUser.name
+      );
+      setUserTeamMembers(userTeamMembers);
+    }
+  }, []);
 
-  const filteredTasks = tasks.filter(task =>
+  const getProjectTitle = (id) => 
+    projects.find(p => p.id === id)?.title || 'Unknown';
+
+  const getMemberName = (id) => 
+    teamMembers.find(m => m.id === id)?.name || 'Unassigned';
+
+  const getMemberAvatar = (id) => 
+    teamMembers.find(m => m.id === id)?.avatar || '?';
+
+  const getProjectColor = (id) => 
+    projects.find(p => p.id === id)?.color || '#999';
+
+  if (!currentUser) {
+    return (
+      <Box sx={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        height: '100vh' 
+      }}>
+        <Typography variant="h6">Loading user data...</Typography>
+      </Box>
+    );
+  }
+
+  // Filter tasks based on selected project and member
+  const filteredTasks = userTasks.filter(task =>
     (selectedProject ? task.project === selectedProject : true) && 
     (selectedMember ? task.assignedTo === selectedMember : true)
   );
 
-  const totalTasks = tasks.length;
-  const completed = tasks.filter(t => t.status === 'Done').length;
-  const inProgress = tasks.filter(t => t.status === 'In Progress').length;
-  const pending = tasks.filter(t => t.status === 'To Do').length;
-
-  const projectSummary = {};
-  projects.forEach(proj => {
-    projectSummary[proj.title] = tasks.filter(t => t.project === proj.id).length;
-  });
+  // Stats calculations
+  const totalTasks = userTasks.length;
+  const completed = userTasks.filter(t => t.status === 'Done').length;
+  const inProgress = userTasks.filter(t => t.status === 'In Progress').length;
+  const pending = userTasks.filter(t => t.status === 'To Do').length;
 
   const stats = [
     { label: 'Total Tasks', value: totalTasks, icon: <Assignment fontSize="large" />, color: theme.palette.primary.main },
@@ -210,18 +267,20 @@ const AdmDash = () => {
       {/* Header */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
         <Typography variant="h4" fontWeight={700} color="text.primary">
-          Dashboard Overview
+          {currentUser.role === 'Admin' 
+            ? `Welcome Admin ${currentUser.name}`
+            : `Welcome ${currentUser.name}`}
         </Typography>
         <Box sx={{ display: 'flex', gap: 2 }}>
           <Chip
             icon={<People />}
-            label={`${teamMembers.length} Team Members`}
+            label={`${userTeamMembers.length} Team Members`}
             variant="outlined"
             sx={{ borderRadius: 1 }}
           />
           <Chip
             icon={<DateRange />}
-            label={`${projects.length} Active Projects`}
+            label={`${userProjects.length} Active Projects`}
             variant="outlined"
             sx={{ borderRadius: 1 }}
           />
@@ -264,11 +323,11 @@ const AdmDash = () => {
 
       {/* Project Summary */}
       <Typography variant="h6" fontWeight={600} gutterBottom sx={{ mt: 4 }}>
-        Project Distribution
+        Your Projects
       </Typography>
       <Grid container spacing={2} sx={{ mb: 4 }}>
-        {projects.map((proj) => {
-          const count = tasks.filter(t => t.project === proj.id).length;
+        {userProjects.map((proj) => {
+          const count = userTasks.filter(t => t.project === proj.id).length;
           return (
             <Grid item xs={12} sm={6} md={4} key={proj.id}>
               <Paper sx={{
@@ -305,7 +364,7 @@ const AdmDash = () => {
                     overflow: 'hidden'
                   }}>
                     <Box sx={{
-                      width: `${(count / tasks.length) * 100}%`,
+                      width: `${(count / userTasks.length) * 100}%`,
                       height: '100%',
                       bgcolor: proj.color
                     }} />
@@ -333,7 +392,7 @@ const AdmDash = () => {
                 sx={{ borderRadius: 2 }}
               >
                 <MenuItem value="">All Projects</MenuItem>
-                {projects.map((proj) => (
+                {userProjects.map((proj) => (
                   <MenuItem key={proj.id} value={proj.id}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                       <Box sx={{
@@ -359,7 +418,7 @@ const AdmDash = () => {
                 sx={{ borderRadius: 2 }}
               >
                 <MenuItem value="">All Members</MenuItem>
-                {teamMembers.map((mem) => (
+                {userTeamMembers.map((mem) => (
                   <MenuItem key={mem.id} value={mem.id}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                       <Avatar sx={{
@@ -465,4 +524,3 @@ const AdmDash = () => {
 };
 
 export default AdmDash;
-
