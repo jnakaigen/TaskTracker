@@ -1,36 +1,93 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box, Typography, Table, TableHead, TableRow, TableCell, TableBody,
-  Paper, Avatar, Button, Chip, Dialog, DialogTitle,
-  DialogContent, DialogActions, TextField, Stack, Divider
+  Paper, Avatar, Button, Dialog, DialogTitle,
+  DialogContent, DialogActions, TextField, Stack, Divider, Snackbar, Alert
 } from '@mui/material';
 import { keyframes } from '@mui/system';
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
-
 
 const fadeIn = keyframes`
   from { opacity: 0; transform: scale(0.95); }
   to { opacity: 1; transform: scale(1); }
 `;
 
-const initialMembers = [
-  { id: 'u1', name: 'Alice Johnson', email: 'alice@example.com', role: 'Admin', status: 'Active', img: '/avatar1.png' },
-  { id: 'u2', name: 'Bob Lee', email: 'bob@example.com', role: 'Team Member', status: 'Active', img: '/avatar2.png' },
-  { id: 'u3', name: 'Charlie Smith', email: 'charlie@example.com', role: 'Team Member', status: 'Active', img: '/avatar3.png' },
-  { id: 'u4', name: 'Diana Prince', email: 'diana@example.com', role: 'Team Member', status: 'Active', img: '/avatar4.png' },
-  { id: 'u5', name: 'Ethan Ray', email: 'ethan@example.com', role: 'Team Member', status: 'Active', img: '/avatar5.png' }
-];
-
 export default function TeamDashboard() {
-  const [members, setMembers] = useState(initialMembers);
+  const [members, setMembers] = useState([]);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [selectedMember, setSelectedMember] = useState(null);
   const [newMember, setNewMember] = useState({
-    id: '', name: '', email: '', role: '', status: 'Active', img: '/avatar-placeholder.png'
+    id: '', name: '', email: '', role: '', img: '/avatar-placeholder.png'
   });
+  const [success, setSuccess] = useState(null);
+  const [error, setError] = useState(null);
+
+  // Fetch members from backend
+  useEffect(() => {
+    fetch('http://localhost:4000/api/teams')
+      .then(res => res.json())
+      .then(data => setMembers(data))
+      .catch(err => console.error('Failed to fetch teams:', err));
+  }, []);
+
+  // Add member (POST)
+  const handleAddSave = async () => {
+    try {
+      const response = await fetch('http://localhost:4000/api/teams', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newMember)
+      });
+      if (response.ok) {
+        const added = await response.json();
+        setMembers(prev => [...prev, added]);
+        setAddDialogOpen(false);
+        setNewMember({ id: '', name: '', email: '', role: '', img: '/avatar-placeholder.png' });
+        setSuccess('Team created successfully');
+      }
+    } catch (err) {
+      console.error('Failed to add member:', err);
+      setError('Failed to add member');
+    }
+  };
+
+  // Edit member (PUT)
+  const handleEditSave = async () => {
+    try {
+      const response = await fetch(`http://localhost:4000/api/teams/${selectedMember.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(selectedMember)
+      });
+      if (response.ok) {
+        const updated = await response.json();
+        setMembers(prev => prev.map(m => (m.id === updated.id ? updated : m)));
+        setEditDialogOpen(false);
+      }
+    } catch (err) {
+      console.error('Failed to update member:', err);
+      setError('Failed to update member');
+    }
+  };
+
+  // Delete member (DELETE)
+  const handleDeleteConfirm = async () => {
+    try {
+      const response = await fetch(`http://localhost:4000/api/teams/${selectedMember.id}`, {
+        method: 'DELETE'
+      });
+      if (response.ok) {
+        setMembers(prev => prev.filter(m => m.id !== selectedMember.id));
+        setDeleteDialogOpen(false);
+      }
+    } catch (err) {
+      console.error('Failed to delete member:', err);
+      setError('Failed to delete member');
+    }
+  };
 
   const openEditDialog = (member) => {
     setSelectedMember({ ...member });
@@ -42,30 +99,24 @@ export default function TeamDashboard() {
     setDeleteDialogOpen(true);
   };
 
-  const handleEditSave = () => {
-    setMembers((prev) =>
-      prev.map((m) => (m.id === selectedMember.id ? selectedMember : m))
-    );
-    setEditDialogOpen(false);
-  };
-
-  const handleDeleteConfirm = () => {
-    setMembers((prev) => prev.filter((m) => m.id !== selectedMember.id));
-    setDeleteDialogOpen(false);
-  };
-
-  const handleAddSave = () => {
-    setMembers([...members, { ...newMember, id: `u${Date.now()}` }]);
-    setAddDialogOpen(false);
-    setNewMember({ id: '', name: '', email: '', role: '', status: 'Active', img: '/avatar-placeholder.png' });
-  };
-
   return (
     <Box style={{
         background: "linear-gradient(135deg,rgb(255, 255, 255),rgb(248, 248, 248))",
         minHeight: "100vh",
         padding: "24px",
       }} >
+      {/* Success and Error Snackbar */}
+      <Snackbar open={!!success} autoHideDuration={6000} onClose={() => setSuccess(null)}>
+        <Alert onClose={() => setSuccess(null)} severity="success" sx={{ width: '100%' }}>
+          {success}
+        </Alert>
+      </Snackbar>
+      <Snackbar open={!!error} autoHideDuration={6000} onClose={() => setError(null)}>
+        <Alert onClose={() => setError(null)} severity="error" sx={{ width: '100%' }}>
+          {error}
+        </Alert>
+      </Snackbar>
+
       <Stack direction="row" justifyContent="space-between" alignItems="center" mb={3}>
         <Box>
           <Typography variant="h4" fontWeight={700} color="primary">Team Members</Typography>
@@ -98,7 +149,6 @@ export default function TeamDashboard() {
               <TableCell><strong>Name</strong></TableCell>
               <TableCell><strong>Email</strong></TableCell>
               <TableCell><strong>Role</strong></TableCell>
-              <TableCell><strong>Status</strong></TableCell>
               <TableCell align="center"><strong>Actions</strong></TableCell>
             </TableRow>
           </TableHead>
@@ -117,17 +167,6 @@ export default function TeamDashboard() {
                 </TableCell>
                 <TableCell>{member.email}</TableCell>
                 <TableCell>{member.role}</TableCell>
-                <TableCell>
-                  <Chip
-                    label={member.status}
-                    sx={{
-                      backgroundColor: '#e6f4ea',
-                      color: '#137c3d',
-                      fontWeight: 500,
-                      fontSize: '0.8rem'
-                    }}
-                  />
-                </TableCell>
                 <TableCell align="center">
                   <Stack direction="row" justifyContent="center" spacing={1}>
                     <Button size="small" variant="contained" startIcon={<EditIcon />} color="primary" onClick={() => openEditDialog(member)}>
@@ -170,6 +209,9 @@ export default function TeamDashboard() {
         <DialogTitle>Add Member</DialogTitle>
         <Divider />
         <DialogContent>
+          <TextField label="ID" variant="outlined" fullWidth margin="dense"
+            value={newMember.id}
+            onChange={(e) => setNewMember({ ...newMember, id: e.target.value })} />
           <TextField label="Name" variant="outlined" fullWidth margin="dense"
             value={newMember.name}
             onChange={(e) => setNewMember({ ...newMember, name: e.target.value })} />
@@ -194,7 +236,7 @@ export default function TeamDashboard() {
           Are you sure you want to delete <strong>{selectedMember?.name}</strong>?
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
+            <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
           <Button onClick={handleDeleteConfirm} color="error" variant="contained">Delete</Button>
         </DialogActions>
       </Dialog>
