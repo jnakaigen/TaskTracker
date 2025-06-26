@@ -1,3 +1,32 @@
+<<<<<<< anakha/backend
+require('dotenv').config();
+
+// Import routes
+const tasksRoutes = require('./routes/tasks');
+const teamsRoutes = require('./routes/teams');
+
+// Import mongoose for database connection
+const mongoose = require('mongoose');
+
+// Express app setup
+const express = require('express');
+const app = express();
+
+// Enable CORS and JSON parsing
+const cors = require('cors');
+app.use(cors());
+app.use(express.json());
+
+// Log all requests
+app.use((req, res, next) => {
+    console.log(req.path, req.method); 
+    next();
+});
+
+// Use routes
+app.use('/api/tasks', tasksRoutes);
+app.use('/api/teams', teamsRoutes);
+=======
 //3rd step=>setup env file
 require('dotenv').config()
 
@@ -47,10 +76,18 @@ mongoose.connect(process.env.MONGO_URI)
     .catch((error)=>{
         console.log(error)
     })
+>>>>>>> main
 
+// Set default port if not in .env
+const PORT = process.env.PORT || 4000;
 
-//3rd step=>setup env file to protect port number
-process.env.PORT=4000
-/*app.listen(process.env.PORT,()=>{
-    console.log(`Listening on port ${process.env.PORT}`)
-}) */
+// Connect to MongoDB and start server
+mongoose.connect(process.env.MONGO_URI)
+    .then(() => {
+        app.listen(PORT, () => {
+            console.log(`Connected to db and Listening on port ${PORT}`);
+        });
+    }) 
+    .catch((error) => {
+        console.log(error);
+    });
