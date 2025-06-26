@@ -91,72 +91,78 @@ const Project = () => {
 
   // Save (Add/Edit)
   const handleDialogSave = async () => {
-    if (
-      !editId.trim() ||
-      !editTitle.trim() ||
-      !editStatus.trim() ||
-      !editStart.trim() ||
-      !editDue.trim() ||
-      !editTasks.trim()
-    ) {
-      setError("All fields are required.");
-      return;
-    }
-    if (!isEditMode && rows.some((row) => row.id === editId)) {
-      setError("ID must be unique!");
-      return;
-    }
-    setLoading(true);
-    try {
-      if (isEditMode) {
-        // Update
-        const response = await fetch(
-          `http://localhost:4000/api/projects/${editRow._id}`,
-          {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              id: editId,
-              title: editTitle,
-              status: editStatus,
-              startDate: editStart,
-              dueDate: editDue,
-              tasks: editTasks,
-            }),
-          }
-        );
-        if (!response.ok) throw new Error("Failed to update project");
-        const updated = await response.json();
-        setRows((prev) =>
-          prev.map((row) => (row._id === updated._id ? updated : row))
-        );
-        setSuccess("Project updated successfully");
-      } else {
-        // Create
-        const response = await fetch("http://localhost:4000/api/projects", {
-          method: "POST",
+  if (
+    !editId.trim() ||
+    !editTitle.trim() ||
+    !editStatus.trim() ||
+    !editStart.trim() ||
+    !editDue.trim() ||
+    !editTasks.trim()
+  ) {
+    setError("All fields are required.");
+    return;
+  }
+  if (!isEditMode && rows.some((row) => row.id === editId)) {
+    setError("ID must be unique!");
+    return;
+  }
+  setLoading(true);
+  try {
+    if (isEditMode) {
+      // Update
+      const response = await fetch(
+        `http://localhost:4000/api/projects/${editRow._id}`,
+        {
+          method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             id: editId,
+            pid: editRow.pid, // keep the same pid on edit
             title: editTitle,
             status: editStatus,
             startDate: editStart,
             dueDate: editDue,
             tasks: editTasks,
           }),
-        });
-        if (!response.ok) throw new Error("Failed to create project");
-        const created = await response.json();
-        setRows((prev) => [...prev, created]);
-        setSuccess("Project created successfully");
-      }
-      setDialogOpen(false);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
+        }
+      );
+      if (!response.ok) throw new Error("Failed to update project");
+      const updated = await response.json();
+      setRows((prev) =>
+        prev.map((row) => (row._id === updated._id ? updated : row))
+      );
+      setSuccess("Project updated successfully");
+    } else {
+      // Generate new pid
+      const maxPid = rows.length > 0 ? Math.max(...rows.map(row => row.pid || 0)) : 0;
+      const newPid = maxPid + 1;
+
+      // Create
+      const response = await fetch("http://localhost:4000/api/projects", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: editId,
+          pid: newPid,
+          title: editTitle,
+          status: editStatus,
+          startDate: editStart,
+          dueDate: editDue,
+          tasks: editTasks,
+        }),
+      });
+      if (!response.ok) throw new Error("Failed to create project");
+      const created = await response.json();
+      setRows((prev) => [...prev, created]);
+      setSuccess("Project created successfully");
     }
-  };
+    setDialogOpen(false);
+  } catch (err) {
+    setError(err.message);
+  } finally {
+    setLoading(false);
+  }
+};
 
   // Delete
   const handleDeleteClick = (row) => {
