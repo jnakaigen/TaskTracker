@@ -8,14 +8,20 @@ const userSchema = new mongoose.Schema({
     unique: true,
     trim: true
   },
+   name: { 
+    type: String, 
+    required: true
+  },
+  email: {
+    type: String,
+    required: true,
+    unique: true,
+    trim: true  // Trim leading and trailing whitespace
+  },
   role: { 
     type: String, 
     required: true,
     enum: ['Admin', 'Member']
-  },
-  name: { 
-    type: String, 
-    required: true
   }
 }, { 
   timestamps: true,

@@ -1,22 +1,23 @@
 const User = require('../models/userModel');
 
 // GET all users (sorted by role and name)
+// GET all users (grouped by role)
 const getUsers = async (req, res) => {
-    try {
-        const users = await User.find({})
-            .sort({ role: 1, name: 1 })
-            .select('id role name'); // Only return necessary fields
+  try {
+    const users = await User.find({})
+      .sort({ name: 1 })
+      .select('id role name');
 
-        const formattedUsers = users.reduce((acc, user) => {
-            if (!acc[user.role]) acc[user.role] = [];
-            acc[user.role].push({ id: user.id, name: user.name });
-            return acc;
-        }, {});
+    // Group users by role
+    const groupedUsers = {
+      Admin: users.filter(u => u.role === 'Admin'),
+      Member: users.filter(u => u.role === 'Member')
+    };
 
-        res.status(200).json(formattedUsers);
-    } catch (error) {
-        res.status(500).json({ error: 'Server error' });
-    }
+    res.status(200).json(groupedUsers);
+  } catch (error) {
+    res.status(500).json({ error: 'Server error' });
+  }
 };
 
 // GET single user by custom id
@@ -34,9 +35,9 @@ const getUser = async (req, res) => {
 
 // Create new user
 const createUser = async (req, res) => {
-    const { id, role, name } = req.body;
+    const { id, name,email,role } = req.body;
     
-    if (!id || !role || !name) {
+    if (!id ||!name ||!email || !role ) {
         return res.status(400).json({ error: 'All fields (id, role, name) are required' });
     }
 
@@ -57,31 +58,34 @@ const createUser = async (req, res) => {
 };
 
 // User login
+// Fix loginUser:
 const loginUser = async (req, res) => {
-    const { id, role } = req.body;
+  const { id } = req.body; // Use only ID for login
 
-    if (!id || !role) {
-        return res.status(400).json({ error: 'ID and role are required' });
+  if (!id) {
+    return res.status(400).json({ error: 'ID is required' });
+  }
+
+  try {
+    const user = await User.findOne({ id });
+    if (!user) {
+      return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    try {
-        const user = await User.findOne({ id, role });
-        if (!user) {
-            return res.status(401).json({ error: 'Invalid credentials' });
-        }
-
-        res.status(200).json({
-            message: 'Login successful',
-            redirectUrl: role === 'Admin' ? '/admdash' : '/memdash',
-            user: {
-                id: user.id,
-                role: user.role,
-                name: user.name
-            }
-        });
-    } catch (error) {
-        res.status(500).json({ error: 'Server error' });
-    }
+    res.status(200).json({
+      message: 'Login successful',
+      redirectUrl: user.role === 'Admin' ? '/admdash' : '/memdash',
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Server error' });
+  }
 };
 
 // Delete user by custom id

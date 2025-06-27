@@ -77,10 +77,7 @@ const Task = () => {
       try {
         // Get current admin from localStorage
         const user = JSON.parse(localStorage.getItem('user'));
-        if (!user || user.role !== 'Admin') {
-          setError('Only admins can manage projects');
-          return;
-        }
+  
         
         const response = await fetch(`http://localhost:4000/api/projects?adminId=${user.id}`);
         if (!response.ok) {

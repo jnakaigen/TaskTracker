@@ -30,6 +30,7 @@ const Project = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editRow, setEditRow] = useState(null);
+  const [editPid, setEditPid] = useState("");
   const [editId, setEditId] = useState("");
   const [editTitle, setEditTitle] = useState("");
   const [editStatus, setEditStatus] = useState("");
@@ -46,27 +47,39 @@ const Project = () => {
   const [sortBy, setSortBy] = useState("");
 
   // Fetch projects
-  useEffect(() => {
-    const fetchProjects = async () => {
-      setLoading(true);
-      try {
-        const response = await fetch("http://localhost:4000/api/projects");
-        if (!response.ok) throw new Error("Failed to fetch projects");
-        const data = await response.json();
-        setRows(data);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchProjects();
-  }, []);
+ useEffect(() => {
+const fetchProjects = async () => {
+  setLoading(true);
+  try {
+    // Get the current user from localStorage
+    const currentUserData = localStorage.getItem('currentUser');
+    if (!currentUserData) throw new Error("User not authenticated");
+    
+    // Parse the user object and extract ID
+    const currentUser = JSON.parse(currentUserData);
+    const userId = currentUser?.id;
+    if (!userId) throw new Error("User ID not found");
+
+    // Pass user ID as query parameter
+    const response = await fetch(`http://localhost:4000/api/projects?id=${userId}`);
+    
+    if (!response.ok) throw new Error("Failed to fetch projects");
+    const data = await response.json();
+    setRows(data);
+  } catch (err) {
+    setError(err.message);
+  } finally {
+    setLoading(false);
+  }
+};
+  fetchProjects();
+}, []);
 
   // Add Project
   const handleAddClick = () => {
     setIsEditMode(false);
     setEditRow(null);
+    setEditPid("");
     setEditId("");
     setEditTitle("");
     setEditStatus("");
@@ -80,6 +93,7 @@ const Project = () => {
   const handleEditClick = (row) => {
     setIsEditMode(true);
     setEditRow(row);
+    setEditPid(row.pid || "");
     setEditId(row.id || "");
     setEditTitle(row.title || "");
     setEditStatus(row.status || "");
@@ -91,78 +105,75 @@ const Project = () => {
 
   // Save (Add/Edit)
   const handleDialogSave = async () => {
-  if (
-    !editId.trim() ||
-    !editTitle.trim() ||
-    !editStatus.trim() ||
-    !editStart.trim() ||
-    !editDue.trim() ||
-    !editTasks.trim()
-  ) {
-    setError("All fields are required.");
-    return;
-  }
-  if (!isEditMode && rows.some((row) => row.id === editId)) {
-    setError("ID must be unique!");
-    return;
-  }
-  setLoading(true);
-  try {
-    if (isEditMode) {
-      // Update
-      const response = await fetch(
-        `http://localhost:4000/api/projects/${editRow._id}`,
-        {
-          method: "PUT",
+    if (
+      !editPid.trim() ||
+      !editId.trim() ||
+      !editTitle.trim() ||
+      !editStatus.trim() ||
+      !editStart.trim() ||
+      !editDue.trim() ||
+      !editTasks.trim()
+    ) {
+      setError("All fields are required.");
+      return;
+    }
+    if (!isEditMode && rows.some((row) => row.pid === editPid)) {
+      setError("PID must be unique!");
+      return;
+    }
+    setLoading(true);
+    try {
+      if (isEditMode) {
+        // Update
+        const response = await fetch(
+          `http://localhost:4000/api/projects/${editRow._id}`,
+          {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              pid: editPid,
+              id: editId,
+              title: editTitle,
+              status: editStatus,
+              startDate: editStart,
+              dueDate: editDue,
+              tasks: editTasks,
+            }),
+          }
+        );
+        if (!response.ok) throw new Error("Failed to update project");
+        const updated = await response.json();
+        setRows((prev) =>
+          prev.map((row) => (row._id === updated._id ? updated : row))
+        );
+        setSuccess("Project updated successfully");
+      } else {
+        // Create
+        const response = await fetch("http://localhost:4000/api/projects", {
+          method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
+            pid: editPid,
             id: editId,
-            pid: editRow.pid, // keep the same pid on edit
             title: editTitle,
             status: editStatus,
             startDate: editStart,
             dueDate: editDue,
             tasks: editTasks,
           }),
-        }
-      );
-      if (!response.ok) throw new Error("Failed to update project");
-      const updated = await response.json();
-      setRows((prev) =>
-        prev.map((row) => (row._id === updated._id ? updated : row))
-      );
-      setSuccess("Project updated successfully");
-    } else {
-      // Generate new pid
-      const maxPid = rows.length > 0 ? Math.max(...rows.map(row => row.pid || 0)) : 0;
-      const newPid = maxPid + 1;
-
-      // Create
-      const response = await fetch("http://localhost:4000/api/projects", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id: editId,
-          pid: newPid,
-          title: editTitle,
-          status: editStatus,
-          startDate: editStart,
-          dueDate: editDue,
-          tasks: editTasks,
-        }),
-      });
-      if (!response.ok) throw new Error("Failed to create project");
-      const created = await response.json();
-      setRows((prev) => [...prev, created]);
-      setSuccess("Project created successfully");
+        });
+        if (!response.ok) throw new Error("Failed to create project");
+        const created = await response.json();
+        setRows((prev) => [...prev, created]);
+        setSuccess("Project created successfully");
+      }
+      setDialogOpen(false);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
     }
-    setDialogOpen(false);
-  } catch (err) {
-    setError(err.message);
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   // Delete
   const handleDeleteClick = (row) => {
@@ -203,6 +214,7 @@ const Project = () => {
 
   // Form validation
   const isFormValid =
+    editPid.trim() &&
     editId.trim() &&
     editTitle.trim() &&
     editStatus.trim() &&
@@ -363,6 +375,7 @@ const Project = () => {
         <Table sx={{ minWidth: 600 }} aria-label="simple table">
           <TableHead sx={{ bgcolor: "#e0e7ef" }}>
             <TableRow sx={{ background: "#f9f9f9", textShadow: "0 0 0.5px #000" }}>
+              <TableCell>PID</TableCell>
               <TableCell>Title</TableCell>
               <TableCell align="center">Status</TableCell>
               <TableCell align="right">Start Date</TableCell>
@@ -381,6 +394,7 @@ const Project = () => {
                   "&:last-child td, &:last-child th": { border: 0 },
                 }}
               >
+                <TableCell>{row.pid}</TableCell>
                 <TableCell component="th" scope="row">{row.title}</TableCell>
                 <TableCell align="center">
                   <Chip
@@ -415,31 +429,31 @@ const Project = () => {
                 </TableCell>
                 <TableCell align="right">{formatDate(row.startDate)}</TableCell>
                 <TableCell align="right">{formatDate(row.dueDate)}</TableCell>
-<TableCell align="right">
-  {(() => {
-    const [completed, total] = row.tasks.split("/").map(Number);
-    const percent = total ? Math.round((completed / total) * 100) : 0;
-    return (
-      <Box sx={{ minWidth: 80 }}>
-        <LinearProgress
-          variant="determinate"
-          value={percent}
-          sx={{
-            height: 8,
-            borderRadius: 5,
-            backgroundColor: "#e0e7ef",
-            "& .MuiLinearProgress-bar": {
-              backgroundColor: "#6366f1"
-            }
-          }}
-        />
-        <Typography variant="body2" align="center" sx={{ mt: 0.5 }}>
-          {percent}%
-        </Typography>
-      </Box>
-    );
-  })()}
-</TableCell>
+                <TableCell align="right">
+                  {(() => {
+                    const [completed, total] = row.tasks.split("/").map(Number);
+                    const percent = total ? Math.round((completed / total) * 100) : 0;
+                    return (
+                      <Box sx={{ minWidth: 80 }}>
+                        <LinearProgress
+                          variant="determinate"
+                          value={percent}
+                          sx={{
+                            height: 8,
+                            borderRadius: 5,
+                            backgroundColor: "#e0e7ef",
+                            "& .MuiLinearProgress-bar": {
+                              backgroundColor: "#6366f1"
+                            }
+                          }}
+                        />
+                        <Typography variant="body2" align="center" sx={{ mt: 0.5 }}>
+                          {percent}%
+                        </Typography>
+                      </Box>
+                    );
+                  })()}
+                </TableCell>
                 <TableCell align="right">{row.tasks}</TableCell>
                 <TableCell align="right">
                   <Stack spacing={2} direction="row" justifyContent="center">
@@ -495,6 +509,14 @@ const Project = () => {
           {isEditMode ? "Edit Project" : "Add New Project"}
         </DialogTitle>
         <DialogContent>
+          <TextField
+            margin="dense"
+            label="PID"
+            fullWidth
+            value={editPid}
+            onChange={(e) => setEditPid(e.target.value)}
+            sx={{ mb: 2 }}
+          />
           <TextField
             margin="dense"
             label="ID"
