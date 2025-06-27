@@ -162,12 +162,13 @@ const Task = () => {
 
     try {
       setLoading(true);
+      const user = JSON.parse(localStorage.getItem('currentUser'));
       const response = await fetch('http://localhost:4000/api/tasks', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(newTask),
+        body: JSON.stringify({ ...newTask, adminId: user.id }) // <-- Make sure adminId is sent!
       });
 
       if (!response.ok) {

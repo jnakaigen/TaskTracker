@@ -49,15 +49,16 @@ const createTask = async (req, res) => {
 
     try {
         // Check if assigned user is in Team
-        let member = await Team.findOne({ id: assignedTo });
+        let member = await Team.findOne({ id: assignedTo,adminId: req.body.adminId  });
         if (!member) {
             // Add with placeholder info; you can improve this later
-            member = await Team.create({
-                id: assignedTo,
-                name: assignedTo,
-                email: `${assignedTo}@example.com`,
-                role: 'Member'
-            });
+           member = await Team.create({
+    id: assignedTo,
+    name: assignedTo,
+    email: `${assignedTo}@example.com`,
+    role: 'Member',
+    adminId: req.body.adminId // or wherever you get the current admin's id
+});
         }
 
         const task = await Task.create({ 

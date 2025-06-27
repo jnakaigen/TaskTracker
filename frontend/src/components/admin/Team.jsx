@@ -30,8 +30,10 @@ export default function TeamDashboard() {
   useEffect(() => {
     const fetchMembers = async () => {
   try {
-    const res = await fetch('http://localhost:4000/api/teams');
+    const user = JSON.parse(localStorage.getItem('currentUser'));
+const res = await fetch(`http://localhost:4000/api/teams?adminId=${user.id}`);
     const data = await res.json();
+
     setMembers(data);
   } catch (err) {
     setError('Failed to fetch teams');
@@ -54,10 +56,11 @@ const fetchTasks = async () => {
   // Add member (POST)
   const handleAddSave = async () => {
     try {
+      const user = JSON.parse(localStorage.getItem('currentUser'));
       const response = await fetch('http://localhost:4000/api/teams', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newMember)
+        body: JSON.stringify({ ...newMember, adminId: user.id })
       });
       if (response.ok) {
         const added = await response.json();
@@ -78,7 +81,7 @@ const fetchTasks = async () => {
       const response = await fetch(`http://localhost:4000/api/teams/${selectedMember.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(selectedMember)
+         body: JSON.stringify({ ...selectedMember, adminId: user.id }) // <-- add adminId here
       });
       if (response.ok) {
         const updated = await response.json();
@@ -118,7 +121,9 @@ const fetchTasks = async () => {
   };
 const assignedIds = [...new Set(tasks.map(task => task.assignedTo))];
 const assignedMembers = members.filter(member => assignedIds.includes(member.id));
-  return (
+console.log("members", members);
+console.log("assignedIds", assignedIds);  
+return (
     <Box style={{
         background: "linear-gradient(135deg,rgb(255, 255, 255),rgb(248, 248, 248))",
         minHeight: "100vh",
