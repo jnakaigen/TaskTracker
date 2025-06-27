@@ -9,6 +9,7 @@ import { Edit, Delete, CheckCircle, AccessTime, ErrorOutline } from '@mui/icons-
 const Task = () => {
   // State variables
   const [tasks, setTasks] = useState([]);
+  const [allTasks, setAllTasks] = useState([]); // Store all tasks from API
   const [projects, setProjects] = useState([]);
   const [teamMembers, setTeamMembers] = useState([]);
   const [newTask, setNewTask] = useState({
@@ -37,9 +38,14 @@ const Task = () => {
   // Create project map for ID to name conversion
   const projectMap = useMemo(() => {
     return projects.reduce((map, project) => {
-      map[project._id] = project.name;
+      map[project.pid] = project.name;
       return map;
     }, {});
+  }, [projects]);
+
+  // Get current user's project IDs
+  const userProjectIds = useMemo(() => {
+    return projects.map(project => project.pid);
   }, [projects]);
 
   // Cleanup effect for undo timeout
@@ -51,7 +57,7 @@ const Task = () => {
     };
   }, [undoTimeout]);
 
-  // Fetch tasks
+  // Fetch all tasks
   useEffect(() => {
     const fetchTasks = async () => {
       setLoading(true);
@@ -61,7 +67,7 @@ const Task = () => {
           throw new Error('Failed to fetch tasks');
         }
         const data = await response.json();
-        setTasks(data);
+        setAllTasks(data); // Store all tasks
       } catch (err) {
         setError(err.message);
       } finally {
@@ -71,15 +77,28 @@ const Task = () => {
     fetchTasks();
   }, []);
 
+  // Filter tasks based on user's projects whenever allTasks or projects change
+  useEffect(() => {
+    if (allTasks.length > 0 && projects.length > 0) {
+      const filteredTasks = allTasks.filter(task => 
+        userProjectIds.includes(task.project?.toString())
+      );
+      setTasks(filteredTasks);
+    } else if (allTasks.length > 0 && projects.length === 0) {
+      // If no projects loaded yet, show empty tasks
+      setTasks([]);
+    }
+  }, [allTasks, userProjectIds]);
+
   // Fetch projects for the current admin
   useEffect(() => {
     const fetchProjects = async () => {
       try {
         // Get current admin from localStorage
-        const user = JSON.parse(localStorage.getItem('user'));
-  
+        const user = JSON.parse(localStorage.getItem('currentUser'));
+        console.log('Current user from localStorage:', user);
         
-        const response = await fetch(`http://localhost:4000/api/projects?adminId=${user.id}`);
+        const response = await fetch(`http://localhost:4000/api/projects?id=${user.id}`);
         if (!response.ok) {
           throw new Error('Failed to fetch projects');
         }
@@ -108,7 +127,9 @@ const Task = () => {
           ...(data.Admin || []).map(user => user.id),
           ...(data.Member || []).map(user => user.id)
         ];
-        
+        if (!response.ok) {
+          throw new Error('Failed to fetch users');
+        }
         setTeamMembers(allUserIds);
       } catch (err) {
         setError('Failed to load team members: ' + err.message);
@@ -118,10 +139,11 @@ const Task = () => {
     fetchTeamMembers();
   }, []);
 
+  // Filter tasks based on search and filters
   const filteredTasks = tasks.filter((task) => {
     const matchesStatus = statusFilter === 'All' || task.status === statusFilter;
-    const matchesProject = projectFilter === 'All' || task.project === projectFilter;
-    const matchesMember = memberFilter === 'All' || task.assignedTo === memberFilter;
+    const matchesProject = projectFilter === 'All' || task.project?.toString() === projectFilter;
+    const matchesMember = memberFilter === 'All' || task.assignedTo?.toString() === memberFilter;
     const matchesSearch = task.title.toLowerCase().includes(search.toLowerCase());
     return matchesStatus && matchesProject && matchesMember && matchesSearch;
   });
@@ -129,6 +151,12 @@ const Task = () => {
   const handleCreateTask = async () => {
     if (!newTask.title || !newTask.dueDate) {
       setError('Title and Due Date are required');
+      return;
+    }
+
+    // Ensure the new task is assigned to one of the user's projects
+    if (!newTask.project || !userProjectIds.includes(newTask.project)) {
+      setError('Please select a valid project');
       return;
     }
 
@@ -148,7 +176,8 @@ const Task = () => {
 
       const createdTask = await response.json();
       setTasks(prev => [...prev, createdTask]);
-      setNewTask({ title: '', description: '', dueDate: '', assignedTo: '', project: '', status: 'To Do' });
+      setAllTasks(prev => [...prev, createdTask]); // Also update allTasks
+      setNewTask({ title: '', description: '', dueDate: '', assignedTo: null, project: null, status: 'To Do' });
       setSuccess('Task created successfully');
     } catch (err) {
       setError(err.message);
@@ -162,6 +191,7 @@ const Task = () => {
     try {
       setLoading(true);
       setTasks(prev => prev.filter(task => task._id !== taskToDelete._id));
+      setAllTasks(prev => prev.filter(task => task._id !== taskToDelete._id)); // Also update allTasks
       setRecentlyDeleted(taskToDelete);
       const timeout = setTimeout(() => {
         setRecentlyDeleted(null);
@@ -198,6 +228,7 @@ const Task = () => {
     
     try {
       setTasks(prev => [...prev, recentlyDeleted]);
+      setAllTasks(prev => [...prev, recentlyDeleted]); // Also update allTasks
       setRecentlyDeleted(null);
 
       if (undoTimeout) {
@@ -217,6 +248,12 @@ const Task = () => {
   };
 
   const handleUpdateTask = async () => {
+    // Ensure the updated task is still assigned to one of the user's projects
+    if (!editTask.project || !userProjectIds.includes(editTask.project)) {
+      setError('Please select a valid project');
+      return;
+    }
+
     try {
       setLoading(true);
       const response = await fetch(`http://localhost:4000/api/tasks/${editTask._id}`, {
@@ -232,7 +269,8 @@ const Task = () => {
       }
 
       const updatedTask = await response.json();
-      setTasks(prev => prev.map(task => task._id === updatedTask._id ? updatedTask : task)); 
+      setTasks(prev => prev.map(task => task._id === updatedTask._id ? updatedTask : task));
+      setAllTasks(prev => prev.map(task => task._id === updatedTask._id ? updatedTask : task)); // Also update allTasks
       setEditingIndex(null);
       setEditTask(null);
       setSuccess('Task updated successfully');
@@ -337,7 +375,7 @@ const Task = () => {
         <Box flex={3}>
           <Card sx={{ height: '105%', bgcolor: '#e6f0fa' }}>
             <CardContent sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-              <Typography variant="h6" mb={2}><b>All Tasks</b></Typography>
+              <Typography variant="h6" mb={2}><b>My Tasks</b></Typography>
               <TextField 
                 fullWidth 
                 placeholder="Search tasks..." 
@@ -363,10 +401,10 @@ const Task = () => {
                   <MenuItem value="Done">Done</MenuItem>
                 </TextField>
                 
-                {/* Project Filter */}
+                {/* Project Filter - Only show user's projects */}
                 <TextField 
                   select 
-                  label={<b>All Projects</b>} 
+                  label={<b>My Projects</b>} 
                   value={projectFilter} 
                   onChange={(e) => setProjectFilter(e.target.value)} 
                   size="small" 
@@ -374,8 +412,8 @@ const Task = () => {
                 >
                   <MenuItem value="All">All</MenuItem>
                   {projects.map(project => (
-                    <MenuItem key={project._id} value={project._id}>
-                      {project.name}
+                    <MenuItem key={project.pid} value={project.pid}>
+                      {project.title}
                     </MenuItem>
                   ))}
                 </TextField>
@@ -390,9 +428,9 @@ const Task = () => {
                   sx={{ flex: 1, bgcolor: 'white', borderRadius: 1, border: '1px solid #aaa' }}
                 >
                   <MenuItem value="All">All</MenuItem>
-                  {teamMembers.map(memberId => (
-                    <MenuItem key={memberId} value={memberId}>
-                      {memberId}
+                  {teamMembers.map(user => (
+                    <MenuItem key={user.id} value={user.id}>
+                      {user.id}
                     </MenuItem>
                   ))}
                 </TextField>
@@ -484,7 +522,7 @@ const Task = () => {
                                   sx={{ mb: 2 }}
                                 >
                                   {projects.map(project => (
-                                    <MenuItem key={project._id} value={project._id}>
+                                    <MenuItem key={project.pid} value={project.pid}>
                                       {project.name}
                                     </MenuItem>
                                   ))}
@@ -586,8 +624,8 @@ const Task = () => {
                 onChange={e => setNewTask({ ...newTask, project: e.target.value })}
               >
                 {projects.map(project => (
-                  <MenuItem key={project._id} value={project._id}>
-                    {project.name}
+                  <MenuItem key={project.pid} value={project.pid}>
+                    {project.title}
                   </MenuItem>
                 ))}
               </TextField>

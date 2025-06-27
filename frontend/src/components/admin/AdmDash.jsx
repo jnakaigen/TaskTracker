@@ -218,17 +218,18 @@ const AdmDash = () => {
     }
   }, []);
 
-  const getProjectTitle = (id) => 
-    projects.find(p => p.id === id)?.title || 'Unknown';
+ // Corrected helper functions
+const getProjectTitle = (id) => 
+  projects.find(p => p._id === id)?.name || 'Unknown'; // Changed 'title' to 'name' and 'id' to '_id'
 
-  const getMemberName = (id) => 
-    teamMembers.find(m => m.id === id)?.name || 'Unassigned';
+const getMemberName = (id) => 
+  teamMembers.find(m => m._id === id)?.name || 'Unassigned'; // Fixed variable name from '_id' to 'id'
 
-  const getMemberAvatar = (id) => 
-    teamMembers.find(m => m.id === id)?.avatar || '?';
+const getMemberAvatar = (id) => 
+  teamMembers.find(m => m._id === id)?.avatar || '?'; // Fixed to use '_id'
 
-  const getProjectColor = (id) => 
-    projects.find(p => p.id === id)?.color || '#999';
+const getProjectColor = (id) => 
+  projects.find(p => p._id === id)?.color || '#999'; // Changed 'id' to '_id'
 
   if (!currentUser) {
     return (
