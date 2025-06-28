@@ -14,6 +14,7 @@ import Task from './components/admin/Task.jsx'
 import Team from './components/admin/Team.jsx'
 import Front from './components/Front.jsx'
 import Login from './components/Login.jsx'
+import MyTask from './components/member/MyTask.jsx';
 
 
 const App = () => {
@@ -35,6 +36,7 @@ const App = () => {
   {/* MEMBER DASHBOARD */}
   <Route path="/memdash" element={<MemDashLayout />}>
     <Route index element={<MemDash />} />
+   <Route path="mytask" element={<MyTask />} />   {/* <-- Add this line */}
   </Route>
 </Routes>
 
