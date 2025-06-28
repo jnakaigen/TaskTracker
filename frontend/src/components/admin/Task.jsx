@@ -192,7 +192,7 @@ const Task = () => {
       const timeout = setTimeout(() => {
         setRecentlyDeleted(null);
         deleteTaskFromBackend(taskToDelete._id);
-      }, 15000);
+      }, 5000);
       
       setUndoTimeout(timeout);
       
@@ -330,7 +330,7 @@ const Task = () => {
               </Button>
             }
           >
-            Task deleted - Undo available for 15 seconds
+            Task deleted - Undo available for 5 seconds
           </Alert>
         </Snackbar>
       )}
