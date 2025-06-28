@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import {
   Box, Card, CardContent, Typography, TextField, MenuItem,
   Button, Table, TableBody, TableCell, TableContainer, TableHead,
-  TableRow, Paper, IconButton, Stack, Snackbar, Alert
+  TableRow, Paper, IconButton, Stack, Snackbar, Alert, Chip,
 } from '@mui/material';
 import { Edit, Delete, CheckCircle, AccessTime, ErrorOutline } from '@mui/icons-material';
 
@@ -352,6 +352,7 @@ const Task = () => {
           else if (stat.label === 'Pending Tasks') bgColor = '#e6f0fa';
           else if (stat.label === 'Completed Tasks') bgColor = '#ddffbd';
 
+
           return (
             <Card key={i} variant="outlined" sx={{ flex: 1, bgcolor: bgColor }}>
               <CardContent>
@@ -466,7 +467,7 @@ const Task = () => {
                             </Stack>
                           </TableCell>
                         </TableRow>
-                        {editingIndex === index && (
+                        {editingIndex === index && editTask && (
                           <TableRow>
                             <TableCell colSpan={7}>
                               <Box mt={2} p={2} bgcolor="#fff" border="1px solid #ccc" borderRadius={2}>
@@ -496,19 +497,19 @@ const Task = () => {
                                   sx={{ mb: 2 }} 
                                 />
                                 <TextField 
-                                  fullWidth 
-                                  select 
-                                  label="Assigned To" 
-                                  value={editTask.assignedTo} 
-                                  onChange={e => setEditTask({ ...editTask, assignedTo: e.target.value })} 
-                                  sx={{ mb: 2 }}
-                                >
-                                  {teamMembers.map(memberId => (
-                                    <MenuItem key={memberId} value={memberId}>
-                                      {memberId}
-                                    </MenuItem>
-                                  ))}
-                                </TextField>
+  fullWidth 
+  select 
+  label="Assigned To" 
+  value={editTask.assignedTo} 
+  onChange={e => setEditTask({ ...editTask, assignedTo: e.target.value })} 
+  sx={{ mb: 2 }}
+>
+  {teamMembers.map(member => (
+    <MenuItem key={member.id} value={member.id}>
+      {member.name}
+    </MenuItem>
+  ))}
+</TextField>
                                 <TextField 
                                   fullWidth 
                                   select 
@@ -523,18 +524,11 @@ const Task = () => {
                                     </MenuItem>
                                   ))}
                                 </TextField>
-                                <TextField 
-                                  fullWidth 
-                                  select 
-                                  label="Status" 
-                                  value={editTask.status} 
-                                  onChange={e => setEditTask({ ...editTask, status: e.target.value })} 
-                                  sx={{ mb: 2 }}
-                                >
-                                  <MenuItem value="To Do">To Do</MenuItem>
-                                  <MenuItem value="In Progress">In Progress</MenuItem>
-                                  <MenuItem value="Done">Done</MenuItem>
-                                </TextField>
+                                <Chip label={editTask.status} color={
+  editTask.status === 'Done' ? 'success' :
+  editTask.status === 'In Progress' ? 'warning' :
+  'default'
+} sx={{ mb: 2 }} />
                                 <Stack direction="row" spacing={2}>
                                   <Button variant="contained" color="primary" onClick={handleUpdateTask}>
                                     Update
