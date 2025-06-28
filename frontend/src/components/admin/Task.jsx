@@ -74,7 +74,16 @@ const Task = () => {
         setLoading(false);
       }
     };
-    fetchTasks();
+    
+    const fetchTeamMembers = async () => {
+    const user = JSON.parse(localStorage.getItem('currentUser'));
+    const res = await fetch(`http://localhost:4000/api/teams?adminId=${user.id}`);
+    const data = await res.json();
+    setTeamMembers(data);
+  };
+  
+  fetchTasks();
+  fetchTeamMembers();
   }, []);
 
   // Filter tasks based on user's projects whenever allTasks or projects change
@@ -173,12 +182,13 @@ const Task = () => {
 
     try {
       setLoading(true);
+      const user = JSON.parse(localStorage.getItem('currentUser'));
       const response = await fetch('http://localhost:4000/api/tasks', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(newTask),
+        body: JSON.stringify({ ...newTask, adminId: user.id }) // <-- Make sure adminId is sent!
       });
 
       if (!response.ok) {
@@ -615,19 +625,23 @@ const Task = () => {
                 value={newTask.dueDate} 
                 onChange={e => setNewTask({ ...newTask, dueDate: e.target.value })} 
               />
-              <TextField 
-                select 
-                label={<b>Assigned To</b>} 
-                fullWidth 
-                value={newTask.assignedTo} 
-                onChange={e => setNewTask({ ...newTask, assignedTo: e.target.value })}
-              >
-                {teamMembers.map(memberId => (
-                  <MenuItem key={memberId} value={memberId}>
-                    {memberId}
-                  </MenuItem>
-                ))}
-              </TextField>
+             
+
+<TextField
+  select
+  label="Assign To"
+  value={newTask.assignedTo}
+  onChange={e => setNewTask({ ...newTask, assignedTo: e.target.value })}
+  fullWidth
+  margin="dense"
+>
+  {teamMembers.map(member => (
+    <MenuItem key={member.id} value={member.id}>
+      {member.name}
+    </MenuItem>
+  ))}
+</TextField>
+
               <TextField 
                 select 
                 label={<b>Project</b>} 

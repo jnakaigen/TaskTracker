@@ -1,6 +1,6 @@
 const Task = require('../models/taskModel');
 const mongoose = require('mongoose');
-const Team = require('../models/teamModel');
+
 
 // GET all tasks (with filtering options)
 const getTasks = async (req, res) => {
@@ -41,6 +41,7 @@ const getTask = async (req, res) => {
 
 // Create a new task
 const createTask = async (req, res) => {
+    console.log('Task create request:', req.body);
     const { title, description, dueDate, assignedTo, project, status } = req.body;
 
     if (!title || !dueDate || !project) {
@@ -48,17 +49,6 @@ const createTask = async (req, res) => {
     }
 
     try {
-        // Check if assigned user is in Team
-        let member = await Team.findOne({ id: assignedTo });
-        if (!member) {
-            // Add with placeholder info; you can improve this later
-            member = await Team.create({
-                id: assignedTo,
-                name: assignedTo,
-                email: `${assignedTo}@example.com`,
-                role: 'Member'
-            });
-        }
 
         const task = await Task.create({ 
             title, 
