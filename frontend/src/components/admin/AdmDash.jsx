@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+
 import {
   Box,
   Grid,
@@ -23,144 +24,6 @@ import {
   Comment
 } from '@mui/icons-material';
 
-// Updated projects with admin assignments
-const projects = [
-  {
-    id: 'proj1',
-    title: 'Project 1',
-    description: 'Revamping the company website with modern UI/UX.',
-    startDate: '2025-06-01',
-    endDate: '2025-07-15',
-    color: '#6366F1',
-    admin: 'Greg',
-    members: ['John', 'Luis', 'Chris']
-  },
-  {
-    id: 'proj2',
-    title: 'Project 2',
-    description: 'Develop and launch the mobile application.',
-    startDate: '2025-06-10',
-    endDate: '2025-08-01',
-    color: '#10B981',
-    admin: 'Greg',
-    members: ['Eden', 'John', 'Alice']
-  },
-  {
-    id: 'proj3',
-    title: 'Project 3',
-    description: 'Summer marketing campaign for user engagement.',
-    startDate: '2025-06-05',
-    endDate: '2025-06-30',
-    color: '#3B82F6',
-    admin: 'Pen',
-    members: ['John', 'Alice', 'Luis', 'Jack']
-  },
-];
-
-// Updated team members with consistent naming
-const teamMembers = [
-  { id: 'u1', name: 'John', email: 'john@example.com', role: 'Developer', avatar: 'J' },
-  { id: 'u2', name: 'Luis', email: 'luis@example.com', role: 'Designer', avatar: 'L' },
-  { id: 'u3', name: 'Chris', email: 'chris@example.com', role: 'Developer', avatar: 'C' },
-  { id: 'u4', name: 'Eden', email: 'eden@example.com', role: 'Developer', avatar: 'E' },
-  { id: 'u5', name: 'Alice', email: 'alice@example.com', role: 'Marketing', avatar: 'A' },
-  { id: 'u6', name: 'Jack', email: 'jack@example.com', role: 'Marketing', avatar: 'J' },
-  { id: 'u7', name: 'Greg', email: 'greg@example.com', role: 'Admin', avatar: 'G' },
-  { id: 'u8', name: 'Pen', email: 'pen@example.com', role: 'Admin', avatar: 'P' },
-];
-
-// Updated tasks with consistent naming
-const tasks = [
-  {
-    id: 't1',
-    title: 'Design Landing Page',
-    description: 'Create modern design for the new homepage with responsive elements.',
-    dueDate: '2025-06-20',
-    assignedTo: 'u2', // Luis
-    project: 'proj1',
-    status: 'In Progress',
-    priority: 'High',
-    comments: ['Mockups done. Need feedback from Greg.']
-  },
-  {
-    id: 't2',
-    title: 'Setup Hosting',
-    description: 'Migrate website to new cloud hosting platform with CI/CD pipeline.',
-    dueDate: '2025-06-22',
-    assignedTo: 'u1', // John
-    project: 'proj1',
-    status: 'To Do',
-    priority: 'Medium',
-    comments: []
-  },
-  {
-    id: 't3',
-    title: 'Implement Mobile Navigation',
-    description: 'Responsive navigation with accessibility features for mobile.',
-    dueDate: '2025-06-25',
-    assignedTo: 'u3', // Chris
-    project: 'proj1',
-    status: 'Done',
-    priority: 'Medium',
-    comments: ['Completed and tested on multiple devices.']
-  },
-  {
-    id: 't4',
-    title: 'Develop Login Flow',
-    description: 'OAuth integration with social login options.',
-    dueDate: '2025-07-01',
-    assignedTo: 'u4', // Eden
-    project: 'proj2',
-    status: 'In Progress',
-    priority: 'High',
-    comments: ['API integrated, UI half done.']
-  },
-  {
-    id: 't5',
-    title: 'Push Notifications Setup',
-    description: 'Configure FCM and implement notification center.',
-    dueDate: '2025-07-10',
-    assignedTo: 'u5', // Alice
-    project: 'proj2',
-    status: 'To Do',
-    priority: 'Low',
-    comments: []
-  },
-  {
-    id: 't6',
-    title: 'Build Task Tracker UI',
-    description: 'Interactive task management interface with drag-and-drop.',
-    dueDate: '2025-07-05',
-    assignedTo: 'u1', // John
-    project: 'proj3',
-    status: 'To Do',
-    priority: 'Medium',
-    comments: []
-  },
-  {
-    id: 't7',
-    title: 'Write Social Media Captions',
-    description: 'Engaging copy for Instagram, Twitter, and LinkedIn.',
-    dueDate: '2025-06-10',
-    assignedTo: 'u6', // Jack
-    project: 'proj3',
-    status: 'Done',
-    priority: 'Low',
-    comments: ['Reviewed by marketing.']
-  },
-  {
-    id: 't8',
-    title: 'Schedule Posts',
-    description: 'Automated scheduling across all platforms with analytics.',
-    dueDate: '2025-06-12',
-    assignedTo: 'u5', // Alice
-    project: 'proj3',
-    status: 'In Progress',
-    priority: 'Medium',
-    comments: []
-  }
-];
-
 const statusColors = {
   'Done': 'success',
   'In Progress': 'warning',
@@ -182,53 +45,43 @@ const AdmDash = () => {
   const [userTasks, setUserTasks] = useState([]);
   const [userTeamMembers, setUserTeamMembers] = useState([]);
 
-  useEffect(() => {
-    // Get current user from localStorage
-    const storedUser = JSON.parse(localStorage.getItem('currentUser'));
-    if (storedUser) {
-      setCurrentUser(storedUser);
-      
-      // Filter projects based on current user
-      const userProjects = storedUser.role === 'Admin'
-        ? projects.filter(proj => proj.admin === storedUser.name)
-        : projects.filter(proj => proj.members.includes(storedUser.name));
-      
-      setUserProjects(userProjects);
-      
-      // Get project IDs for task filtering
-      const projectIds = userProjects.map(p => p.id);
-      
-      // Filter tasks based on user's projects
-      const userTasks = tasks.filter(task => 
-        projectIds.includes(task.project)
-      );
-      setUserTasks(userTasks);
-      
-      // Get team members from user's projects
-      const memberNames = new Set();
-      userProjects.forEach(proj => {
-        proj.members.forEach(member => memberNames.add(member));
-      });
-      
-      // Convert names to team member objects
-      const userTeamMembers = teamMembers.filter(member => 
-        memberNames.has(member.name) || member.name === storedUser.name
-      );
-      setUserTeamMembers(userTeamMembers);
-    }
-  }, []);
+ useEffect(() => {
+  const storedUser = JSON.parse(localStorage.getItem('currentUser'));
+  if (storedUser) {
+    setCurrentUser(storedUser);
 
-  const getProjectTitle = (id) => 
-    projects.find(p => p.id === id)?.title || 'Unknown';
+    // Fetch projects (this is correct if your backend supports it)
+    fetch(`http://localhost:4000/api/projects?id=${storedUser.id}`)
+      .then(res => res.json())
+      .then(data => setUserProjects(Array.isArray(data) ? data : []))
+      .catch(() => setUserProjects([]));
 
-  const getMemberName = (id) => 
-    teamMembers.find(m => m.id === id)?.name || 'Unassigned';
+    // Fetch tasks (remove adminId if not supported)
+    fetch('http://localhost:4000/api/tasks')
+      .then(res => res.json())
+      .then(data => setUserTasks(Array.isArray(data) ? data : []))
+      .catch(() => setUserTasks([]));
 
-  const getMemberAvatar = (id) => 
-    teamMembers.find(m => m.id === id)?.avatar || '?';
+    // Fetch team members (use plural "teams")
+    fetch(`http://localhost:4000/api/teams?adminId=${storedUser.id}`)
+      .then(res => res.json())
+      .then(data => setUserTeamMembers(Array.isArray(data) ? data : []))
+      .catch(() => setUserTeamMembers([]));
+  }
+}, []);
 
-  const getProjectColor = (id) => 
-    projects.find(p => p.id === id)?.color || '#999';
+  // Corrected helper functions
+  const getProjectTitle = (id) =>
+    userProjects.find(p => p.id === id || p._id === id)?.title || 'Unknown';
+
+  const getMemberName = (id) =>
+    userTeamMembers.find(m => m.id === id || m._id === id)?.name || 'Unassigned';
+
+  const getMemberAvatar = (id) =>
+    userTeamMembers.find(m => m.id === id || m._id === id)?.avatar || '?';
+
+  const getProjectColor = (id) =>
+    userProjects.find(p => p.id === id || p._id === id)?.color || '#999';
 
   if (!currentUser) {
     return (
@@ -244,16 +97,21 @@ const AdmDash = () => {
   }
 
   // Filter tasks based on selected project and member
-  const filteredTasks = userTasks.filter(task =>
-    (selectedProject ? task.project === selectedProject : true) && 
-    (selectedMember ? task.assignedTo === selectedMember : true)
-  );
+const getId = val => (typeof val === 'object' && val !== null ? val.id || val._id : val);
+const adminProjectPids = userProjects.map(p => p.pid);
+const adminTasks = userTasks.filter(
+  t => adminProjectPids.includes(t.project)
+);
+const filteredTasks = adminTasks.filter(task =>
+  (selectedProject ? String(task.project) === String(selectedProject) : true) &&
+  (selectedMember ? String(task.assignedTo) === String(selectedMember) : true)
+);
 
   // Stats calculations
-  const totalTasks = userTasks.length;
-  const completed = userTasks.filter(t => t.status === 'Done').length;
-  const inProgress = userTasks.filter(t => t.status === 'In Progress').length;
-  const pending = userTasks.filter(t => t.status === 'To Do').length;
+  const totalTasks = adminTasks.length;
+  const completed = adminTasks.filter(t => t.status === 'Done').length;
+  const inProgress = adminTasks.filter(t => t.status === 'In Progress').length;
+  const pending = adminTasks.filter(t => t.status === 'To Do').length;
 
   const stats = [
     { label: 'Total Tasks', value: totalTasks, icon: <Assignment fontSize="large" />, color: theme.palette.primary.main },
@@ -327,9 +185,11 @@ const AdmDash = () => {
       </Typography>
       <Grid container spacing={2} sx={{ mb: 4 }}>
         {userProjects.map((proj) => {
-          const count = userTasks.filter(t => t.project === proj.id).length;
+const count = filteredTasks.filter(
+  t => String(getId(t.project)) === String(proj.pid || proj._id)
+).length;
           return (
-            <Grid item xs={12} sm={6} md={4} key={proj.id}>
+            <Grid item xs={12} sm={6} md={4} key={proj.pid}>
               <Paper sx={{
                 p: 3,
                 borderRadius: 3,
@@ -383,7 +243,7 @@ const AdmDash = () => {
         </Typography>
         <Grid container spacing={2}>
           <Grid item xs={12} md={6}>
-            <FormControl fullWidth>
+            <FormControl sx={{width:250, borderRadius: 2}}>
               <InputLabel>Project</InputLabel>
               <Select
                 value={selectedProject}
@@ -393,7 +253,7 @@ const AdmDash = () => {
               >
                 <MenuItem value="">All Projects</MenuItem>
                 {userProjects.map((proj) => (
-                  <MenuItem key={proj.id} value={proj.id}>
+                  <MenuItem key={proj.pid || proj._id} value={proj.pid || proj._id}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                       <Box sx={{
                         width: 12,
@@ -409,17 +269,17 @@ const AdmDash = () => {
             </FormControl>
           </Grid>
           <Grid item xs={12} md={6}>
-            <FormControl fullWidth>
+            <FormControl sx={{width:250, borderRadius: 2}}>
               <InputLabel>Team Member</InputLabel>
               <Select
                 value={selectedMember}
-                onChange={(e) => setSelectedMember(e.target.value)}
+                onChange={(e) => setSelectedMember(String(e.target.value))}
                 label="Team Member"
                 sx={{ borderRadius: 2 }}
               >
                 <MenuItem value="">All Members</MenuItem>
                 {userTeamMembers.map((mem) => (
-                  <MenuItem key={mem.id} value={mem.id}>
+                  <MenuItem key={mem.id || mem._id} value={mem.id || mem._id}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                       <Avatar sx={{
                         width: 24,
@@ -499,7 +359,7 @@ const AdmDash = () => {
                     </Typography>
                   </Box>
                   
-                  {task.comments.length > 0 && (
+                  {Array.isArray(task.comments) && task.comments.length > 0 && (
                     <Box sx={{ mt: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
                       <Comment color="action" fontSize="small" />
                       <Typography variant="caption" color="text.secondary">

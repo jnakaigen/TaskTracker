@@ -53,26 +53,29 @@ const Login = () => {
   };
 
   const handleLogin = async (e) => {
-    e.preventDefault();
-    if (!role || !userId) return;
-    try {
-      const res = await fetch('http://localhost:4000/api/users/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ role, id: userId })
-      });
-      const json = await res.json();
-      if (res.ok) {
-        localStorage.setItem('currentUser', JSON.stringify(json.user));
-        navigate(json.redirectUrl, { state: { user: json.user } });
-      } else {
-        setError(json.error || 'Login failed');
-      }
-    } catch (err) {
-      setError('Login error. Please try again.');
-      console.error('Login error:', err);
+  e.preventDefault();
+  if (!userId) return;
+  
+  try {
+    const res = await fetch('http://localhost:4000/api/users/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: userId }) // Send only ID
+    });
+    
+    const json = await res.json();
+    console.log("Login response:", json);
+    if (res.ok) {
+      console.log("Storing user:", json.user);
+      localStorage.setItem('currentUser', JSON.stringify(json.user));
+      navigate(json.redirectUrl);
+    } else {
+      setError(json.error || 'Login failed');
     }
-  };
+  } catch (err) {
+    setError('Login error. Please try again.');
+  }
+};
 
   if (loading) return <Typography>Loading...</Typography>;
 

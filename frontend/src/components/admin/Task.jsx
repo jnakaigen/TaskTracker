@@ -2,13 +2,14 @@ import React, { useState, useEffect, useMemo } from 'react';
 import {
   Box, Card, CardContent, Typography, TextField, MenuItem,
   Button, Table, TableBody, TableCell, TableContainer, TableHead,
-  TableRow, Paper, IconButton, Stack, Snackbar, Alert
+  TableRow, Paper, IconButton, Stack, Snackbar, Alert, Chip,
 } from '@mui/material';
 import { Edit, Delete, CheckCircle, AccessTime, ErrorOutline } from '@mui/icons-material';
 
 const Task = () => {
   // State variables
   const [tasks, setTasks] = useState([]);
+  const [allTasks, setAllTasks] = useState([]); // Store all tasks from API
   const [projects, setProjects] = useState([]);
   const [teamMembers, setTeamMembers] = useState([]);
   const [newTask, setNewTask] = useState({
@@ -37,9 +38,14 @@ const Task = () => {
   // Create project map for ID to name conversion
   const projectMap = useMemo(() => {
     return projects.reduce((map, project) => {
-      map[project._id] = project.name;
+      map[project.pid] = project.name;
       return map;
     }, {});
+  }, [projects]);
+
+  // Get current user's project IDs
+  const userProjectIds = useMemo(() => {
+    return projects.map(project => project.pid);
   }, [projects]);
 
   // Cleanup effect for undo timeout
@@ -51,7 +57,7 @@ const Task = () => {
     };
   }, [undoTimeout]);
 
-  // Fetch tasks
+  // Fetch all tasks
   useEffect(() => {
     const fetchTasks = async () => {
       setLoading(true);
@@ -61,28 +67,47 @@ const Task = () => {
           throw new Error('Failed to fetch tasks');
         }
         const data = await response.json();
-        setTasks(data);
+        setAllTasks(data); // Store all tasks
       } catch (err) {
         setError(err.message);
       } finally {
         setLoading(false);
       }
     };
-    fetchTasks();
+    
+    const fetchTeamMembers = async () => {
+    const user = JSON.parse(localStorage.getItem('currentUser'));
+    const res = await fetch(`http://localhost:4000/api/teams?adminId=${user.id}`);
+    const data = await res.json();
+    setTeamMembers(data);
+  };
+  
+  fetchTasks();
+  fetchTeamMembers();
   }, []);
+
+  // Filter tasks based on user's projects whenever allTasks or projects change
+  useEffect(() => {
+    if (allTasks.length > 0 && projects.length > 0) {
+      const filteredTasks = allTasks.filter(task => 
+        userProjectIds.includes(task.project?.toString())
+      );
+      setTasks(filteredTasks);
+    } else if (allTasks.length > 0 && projects.length === 0) {
+      // If no projects loaded yet, show empty tasks
+      setTasks([]);
+    }
+  }, [allTasks, userProjectIds]);
 
   // Fetch projects for the current admin
   useEffect(() => {
     const fetchProjects = async () => {
       try {
         // Get current admin from localStorage
-        const user = JSON.parse(localStorage.getItem('user'));
-        if (!user || user.role !== 'Admin') {
-          setError('Only admins can manage projects');
-          return;
-        }
+        const user = JSON.parse(localStorage.getItem('currentUser'));
+        console.log('Current user from localStorage:', user);
         
-        const response = await fetch(`http://localhost:4000/api/projects?adminId=${user.id}`);
+        const response = await fetch(`http://localhost:4000/api/projects?id=${user.id}`);
         if (!response.ok) {
           throw new Error('Failed to fetch projects');
         }
@@ -96,53 +121,48 @@ const Task = () => {
     fetchProjects();
   }, []);
 
-  // Fetch team members
-  useEffect(() => {
-    const fetchTeamMembers = async () => {
-      try {
-        const response = await fetch('http://localhost:4000/api/users');
-        if (!response.ok) {
-          throw new Error('Failed to fetch users');
-        }
-        const data = await response.json();
-        
-        // Extract all user IDs from both Admin and Member groups
-        const allUserIds = [
-          ...(data.Admin || []).map(user => user.id),
-          ...(data.Member || []).map(user => user.id)
-        ];
-        
-        setTeamMembers(allUserIds);
-      } catch (err) {
-        setError('Failed to load team members: ' + err.message);
-      }
-    };
 
-    fetchTeamMembers();
-  }, []);
-
+  // Filter tasks based on search and filters
   const filteredTasks = tasks.filter((task) => {
     const matchesStatus = statusFilter === 'All' || task.status === statusFilter;
-    const matchesProject = projectFilter === 'All' || task.project === projectFilter;
-    const matchesMember = memberFilter === 'All' || task.assignedTo === memberFilter;
+    const matchesProject = projectFilter === 'All' || task.project?.toString() === projectFilter;
+    const matchesMember = memberFilter === 'All' || task.assignedTo?.toString() === memberFilter;
     const matchesSearch = task.title.toLowerCase().includes(search.toLowerCase());
     return matchesStatus && matchesProject && matchesMember && matchesSearch;
   });
 
+  // --- Only this function is changed for your requirement ---
   const handleCreateTask = async () => {
     if (!newTask.title || !newTask.dueDate) {
       setError('Title and Due Date are required');
       return;
     }
 
+    // Check if due date is before today
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    const dueDate = new Date(newTask.dueDate);
+    dueDate.setHours(0,0,0,0);
+    if (dueDate < today) {
+      setError('Please select today or a future date for the due date.');
+      return;
+    }
+
+    // Ensure the new task is assigned to one of the user's projects
+    if (!newTask.project || !userProjectIds.includes(newTask.project)) {
+      setError('Please select a valid project');
+      return;
+    }
+
     try {
       setLoading(true);
+      const user = JSON.parse(localStorage.getItem('currentUser'));
       const response = await fetch('http://localhost:4000/api/tasks', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(newTask),
+        body: JSON.stringify({ ...newTask, adminId: user.id }) // <-- Make sure adminId is sent!
       });
 
       if (!response.ok) {
@@ -151,7 +171,8 @@ const Task = () => {
 
       const createdTask = await response.json();
       setTasks(prev => [...prev, createdTask]);
-      setNewTask({ title: '', description: '', dueDate: '', assignedTo: '', project: '', status: 'To Do' });
+      setAllTasks(prev => [...prev, createdTask]); // Also update allTasks
+      setNewTask({ title: '', description: '', dueDate: '', assignedTo: null, project: null, status: 'To Do' });
       setSuccess('Task created successfully');
     } catch (err) {
       setError(err.message);
@@ -159,17 +180,19 @@ const Task = () => {
       setLoading(false);
     }
   };
+  // --- End of change ---
 
   const handleDelete = async (index) => {
     const taskToDelete = filteredTasks[index];
     try {
       setLoading(true);
       setTasks(prev => prev.filter(task => task._id !== taskToDelete._id));
+      setAllTasks(prev => prev.filter(task => task._id !== taskToDelete._id)); // Also update allTasks
       setRecentlyDeleted(taskToDelete);
       const timeout = setTimeout(() => {
         setRecentlyDeleted(null);
         deleteTaskFromBackend(taskToDelete._id);
-      }, 15000);
+      }, 5000);
       
       setUndoTimeout(timeout);
       
@@ -201,6 +224,7 @@ const Task = () => {
     
     try {
       setTasks(prev => [...prev, recentlyDeleted]);
+      setAllTasks(prev => [...prev, recentlyDeleted]); // Also update allTasks
       setRecentlyDeleted(null);
 
       if (undoTimeout) {
@@ -220,6 +244,12 @@ const Task = () => {
   };
 
   const handleUpdateTask = async () => {
+    // Ensure the updated task is still assigned to one of the user's projects
+    if (!editTask.project || !userProjectIds.includes(editTask.project)) {
+      setError('Please select a valid project');
+      return;
+    }
+
     try {
       setLoading(true);
       const response = await fetch(`http://localhost:4000/api/tasks/${editTask._id}`, {
@@ -235,7 +265,8 @@ const Task = () => {
       }
 
       const updatedTask = await response.json();
-      setTasks(prev => prev.map(task => task._id === updatedTask._id ? updatedTask : task)); 
+      setTasks(prev => prev.map(task => task._id === updatedTask._id ? updatedTask : task));
+      setAllTasks(prev => prev.map(task => task._id === updatedTask._id ? updatedTask : task)); // Also update allTasks
       setEditingIndex(null);
       setEditTask(null);
       setSuccess('Task updated successfully');
@@ -299,7 +330,7 @@ const Task = () => {
               </Button>
             }
           >
-            Task deleted - Undo available for 15 seconds
+            Task deleted - Undo available for 5 seconds
           </Alert>
         </Snackbar>
       )}
@@ -321,6 +352,7 @@ const Task = () => {
           else if (stat.label === 'Pending Tasks') bgColor = '#e6f0fa';
           else if (stat.label === 'Completed Tasks') bgColor = '#ddffbd';
 
+
           return (
             <Card key={i} variant="outlined" sx={{ flex: 1, bgcolor: bgColor }}>
               <CardContent>
@@ -340,7 +372,7 @@ const Task = () => {
         <Box flex={3}>
           <Card sx={{ height: '105%', bgcolor: '#e6f0fa' }}>
             <CardContent sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-              <Typography variant="h6" mb={2}><b>All Tasks</b></Typography>
+              <Typography variant="h6" mb={2}><b>My Tasks</b></Typography>
               <TextField 
                 fullWidth 
                 placeholder="Search tasks..." 
@@ -366,10 +398,10 @@ const Task = () => {
                   <MenuItem value="Done">Done</MenuItem>
                 </TextField>
                 
-                {/* Project Filter */}
+                {/* Project Filter - Only show user's projects */}
                 <TextField 
                   select 
-                  label={<b>All Projects</b>} 
+                  label={<b>My Projects</b>} 
                   value={projectFilter} 
                   onChange={(e) => setProjectFilter(e.target.value)} 
                   size="small" 
@@ -377,8 +409,8 @@ const Task = () => {
                 >
                   <MenuItem value="All">All</MenuItem>
                   {projects.map(project => (
-                    <MenuItem key={project._id} value={project._id}>
-                      {project.name}
+                    <MenuItem key={project.pid} value={project.pid}>
+                      {project.title}
                     </MenuItem>
                   ))}
                 </TextField>
@@ -393,9 +425,9 @@ const Task = () => {
                   sx={{ flex: 1, bgcolor: 'white', borderRadius: 1, border: '1px solid #aaa' }}
                 >
                   <MenuItem value="All">All</MenuItem>
-                  {teamMembers.map(memberId => (
-                    <MenuItem key={memberId} value={memberId}>
-                      {memberId}
+                  {teamMembers.map(user => (
+                    <MenuItem key={user.id} value={user.id}>
+                      {user.id}
                     </MenuItem>
                   ))}
                 </TextField>
@@ -435,7 +467,7 @@ const Task = () => {
                             </Stack>
                           </TableCell>
                         </TableRow>
-                        {editingIndex === index && (
+                        {editingIndex === index && editTask && (
                           <TableRow>
                             <TableCell colSpan={7}>
                               <Box mt={2} p={2} bgcolor="#fff" border="1px solid #ccc" borderRadius={2}>
@@ -465,19 +497,19 @@ const Task = () => {
                                   sx={{ mb: 2 }} 
                                 />
                                 <TextField 
-                                  fullWidth 
-                                  select 
-                                  label="Assigned To" 
-                                  value={editTask.assignedTo} 
-                                  onChange={e => setEditTask({ ...editTask, assignedTo: e.target.value })} 
-                                  sx={{ mb: 2 }}
-                                >
-                                  {teamMembers.map(memberId => (
-                                    <MenuItem key={memberId} value={memberId}>
-                                      {memberId}
-                                    </MenuItem>
-                                  ))}
-                                </TextField>
+  fullWidth 
+  select 
+  label="Assigned To" 
+  value={editTask.assignedTo} 
+  onChange={e => setEditTask({ ...editTask, assignedTo: e.target.value })} 
+  sx={{ mb: 2 }}
+>
+  {teamMembers.map(member => (
+    <MenuItem key={member.id} value={member.id}>
+      {member.name}
+    </MenuItem>
+  ))}
+</TextField>
                                 <TextField 
                                   fullWidth 
                                   select 
@@ -487,23 +519,16 @@ const Task = () => {
                                   sx={{ mb: 2 }}
                                 >
                                   {projects.map(project => (
-                                    <MenuItem key={project._id} value={project._id}>
+                                    <MenuItem key={project.pid} value={project.pid}>
                                       {project.name}
                                     </MenuItem>
                                   ))}
                                 </TextField>
-                                <TextField 
-                                  fullWidth 
-                                  select 
-                                  label="Status" 
-                                  value={editTask.status} 
-                                  onChange={e => setEditTask({ ...editTask, status: e.target.value })} 
-                                  sx={{ mb: 2 }}
-                                >
-                                  <MenuItem value="To Do">To Do</MenuItem>
-                                  <MenuItem value="In Progress">In Progress</MenuItem>
-                                  <MenuItem value="Done">Done</MenuItem>
-                                </TextField>
+                                <Chip label={editTask.status} color={
+  editTask.status === 'Done' ? 'success' :
+  editTask.status === 'In Progress' ? 'warning' :
+  'default'
+} sx={{ mb: 2 }} />
                                 <Stack direction="row" spacing={2}>
                                   <Button variant="contained" color="primary" onClick={handleUpdateTask}>
                                     Update
@@ -568,19 +593,23 @@ const Task = () => {
                 value={newTask.dueDate} 
                 onChange={e => setNewTask({ ...newTask, dueDate: e.target.value })} 
               />
-              <TextField 
-                select 
-                label={<b>Assigned To</b>} 
-                fullWidth 
-                value={newTask.assignedTo} 
-                onChange={e => setNewTask({ ...newTask, assignedTo: e.target.value })}
-              >
-                {teamMembers.map(memberId => (
-                  <MenuItem key={memberId} value={memberId}>
-                    {memberId}
-                  </MenuItem>
-                ))}
-              </TextField>
+             
+
+<TextField
+  select
+  label="Assign To"
+  value={newTask.assignedTo}
+  onChange={e => setNewTask({ ...newTask, assignedTo: e.target.value })}
+  fullWidth
+  margin="dense"
+>
+  {teamMembers.map(member => (
+    <MenuItem key={member.id} value={member.id}>
+      {member.name}
+    </MenuItem>
+  ))}
+</TextField>
+
               <TextField 
                 select 
                 label={<b>Project</b>} 
@@ -589,8 +618,8 @@ const Task = () => {
                 onChange={e => setNewTask({ ...newTask, project: e.target.value })}
               >
                 {projects.map(project => (
-                  <MenuItem key={project._id} value={project._id}>
-                    {project.name}
+                  <MenuItem key={project.pid} value={project.pid}>
+                    {project.title}
                   </MenuItem>
                 ))}
               </TextField>
@@ -610,7 +639,7 @@ const Task = () => {
           </Card>
         </Box>
       </Box>
-    </Box>
+       </Box>
   );
 };
 

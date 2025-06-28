@@ -14,7 +14,7 @@ const fadeIn = keyframes`
 `;
 
 export default function TeamDashboard() {
-  const [members, setMembers] = useState([]);
+  const [teamMembers, setTeamMembers] = useState([]);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
@@ -25,25 +25,32 @@ export default function TeamDashboard() {
   const [success, setSuccess] = useState(null);
   const [error, setError] = useState(null);
 
+
   // Fetch members from backend
-  useEffect(() => {
-    fetch('http://localhost:4000/api/teams')
-      .then(res => res.json())
-      .then(data => setMembers(data))
-      .catch(err => console.error('Failed to fetch teams:', err));
-  }, []);
+ useEffect(() => {
+
+  const fetchTeamMembers = async () => {
+    const user = JSON.parse(localStorage.getItem('currentUser'));
+    const res = await fetch(`http://localhost:4000/api/teams?adminId=${user.id}`);
+    const data = await res.json();
+    setTeamMembers(data);
+  };
+  fetchTeamMembers();
+}, []);
+
 
   // Add member (POST)
   const handleAddSave = async () => {
     try {
+      const user = JSON.parse(localStorage.getItem('currentUser'));
       const response = await fetch('http://localhost:4000/api/teams', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newMember)
+        body: JSON.stringify({ ...newMember, adminId: user.id })
       });
       if (response.ok) {
         const added = await response.json();
-        setMembers(prev => [...prev, added]);
+        setTeamMembers(prev => [...prev, added]);
         setAddDialogOpen(false);
         setNewMember({ id: '', name: '', email: '', role: '', img: '/avatar-placeholder.png' });
         setSuccess('Team created successfully');
@@ -60,11 +67,11 @@ export default function TeamDashboard() {
       const response = await fetch(`http://localhost:4000/api/teams/${selectedMember.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(selectedMember)
+         body: JSON.stringify({ ...selectedMember, adminId: user.id }) // <-- add adminId here
       });
       if (response.ok) {
         const updated = await response.json();
-        setMembers(prev => prev.map(m => (m.id === updated.id ? updated : m)));
+        setTeamMembers(prev => prev.map(m => (m.id === updated.id ? updated : m)));
         setEditDialogOpen(false);
       }
     } catch (err) {
@@ -80,7 +87,7 @@ export default function TeamDashboard() {
         method: 'DELETE'
       });
       if (response.ok) {
-        setMembers(prev => prev.filter(m => m.id !== selectedMember.id));
+        setTeamMembers(prev => prev.filter(m => m.id !== selectedMember.id));
         setDeleteDialogOpen(false);
       }
     } catch (err) {
@@ -99,7 +106,9 @@ export default function TeamDashboard() {
     setDeleteDialogOpen(true);
   };
 
-  return (
+console.log("teamMembers", teamMembers);
+
+return (
     <Box style={{
         background: "linear-gradient(135deg,rgb(255, 255, 255),rgb(248, 248, 248))",
         minHeight: "100vh",
@@ -121,7 +130,7 @@ export default function TeamDashboard() {
         <Box>
           <Typography variant="h4" fontWeight={700} color="primary">Team Members</Typography>
           <Typography variant="body1" color="text.secondary">
-            {members.length} Members: 1 Admin, {members.length - 1} Team Members
+            {teamMembers.length} Members: 1 Admin, {teamMembers.length - 1} Team Members
           </Typography>
         </Box>
         <Button
@@ -153,7 +162,7 @@ export default function TeamDashboard() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {members.map((member) => (
+            {teamMembers.map((member) => (
               <TableRow key={member.id} hover sx={{
                 transition: 'all 0.2s ease-in-out',
                 '&:hover': { backgroundColor: '#f0f7ff' }

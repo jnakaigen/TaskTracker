@@ -1,4 +1,3 @@
-// Step 1: Define a team schema
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
@@ -7,8 +6,8 @@ const teamSchema = new Schema({
     name: { type: String, required: true },
     email: { type: String, required: true },
     role: { type: String, required: true },
-    // img: { type: String } // Uncomment if you want to store avatar URLs
-}, { timestamps: true }); // Adds createdAt and updatedAt fields
+    adminId: { type: String, required: true }, // <-- Add this line
+    // img: { type: String }
+}, { timestamps: true });
 
-// Step 2: Create a team model
 module.exports = mongoose.model('Team', teamSchema);
