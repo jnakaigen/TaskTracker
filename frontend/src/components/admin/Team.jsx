@@ -24,7 +24,7 @@ export default function TeamDashboard() {
   });
   const [success, setSuccess] = useState(null);
   const [error, setError] = useState(null);
-  const [tasks, setTasks] = useState([]);
+
 
   // Fetch members from backend
   useEffect(() => {
@@ -39,17 +39,7 @@ const res = await fetch(`http://localhost:4000/api/teams?adminId=${user.id}`);
     setError('Failed to fetch teams');
   }
 };
-const fetchTasks = async () => {
-    try {
-      const res = await fetch('http://localhost:4000/api/tasks');
-      const data = await res.json();
-      setTasks(data);
-    } catch (err) {
-      setError('Failed to fetch tasks');
-    }
-  };
     fetchMembers();
-    fetchTasks();
   }, []);
 
 
@@ -119,10 +109,9 @@ const fetchTasks = async () => {
     setSelectedMember(member);
     setDeleteDialogOpen(true);
   };
-const assignedIds = [...new Set(tasks.map(task => task.assignedTo))];
-const assignedMembers = members.filter(member => assignedIds.includes(member.id));
+
 console.log("members", members);
-console.log("assignedIds", assignedIds);  
+
 return (
     <Box style={{
         background: "linear-gradient(135deg,rgb(255, 255, 255),rgb(248, 248, 248))",
@@ -177,7 +166,7 @@ return (
             </TableRow>
           </TableHead>
           <TableBody>
-            {assignedMembers.map((member) => (
+            {members.map((member) => (
               <TableRow key={member.id} hover sx={{
                 transition: 'all 0.2s ease-in-out',
                 '&:hover': { backgroundColor: '#f0f7ff' }
