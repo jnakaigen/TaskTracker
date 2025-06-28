@@ -108,11 +108,33 @@ const updateTask = async (req, res) => {
         res.status(400).json({ error: error.message });
     }
 }
+const updateTaskStatus = async (req, res) => {
+    const { id } = req.params;
+    const { status } = req.body;
 
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(404).json({ message: 'Invalid ID' });
+    }
+
+    try {
+        const task = await Task.findByIdAndUpdate(
+            id,
+            { status },
+            { new: true, runValidators: true }
+        );
+        if (!task) {
+            return res.status(404).json({ message: 'Task not found' });
+        }
+        res.status(200).json(task);
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
+};
 module.exports = {
     getTasks,
     getTask,
     createTask,
     deleteTask,
-    updateTask
+    updateTask,
+    updateTaskStatus
 }

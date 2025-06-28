@@ -22,7 +22,7 @@ import AssignmentIcon from '@mui/icons-material/Assignment'; // For My Task
 import { NavLink, useNavigate, Outlet } from 'react-router-dom';
 import Button from '@mui/material/Button';
 import LogoutIcon from '@mui/icons-material/Logout';
-
+import {Outlet} from 'react-router-dom';
 const drawerWidth = 260;
 
 const StyledNavLink = styled(NavLink)(({ theme }) => ({
@@ -50,7 +50,6 @@ const MemDashLayout = ({ children }) => {
 
   const menuItems = [
     { text: 'Dashboard', icon: <DashboardIcon />, path: '/memdash' },
-    { text: 'My Task', icon: <AssignmentIcon />, path: '/memdash/mytask' }, // Added My Task
   ];
 
   const drawer = (
