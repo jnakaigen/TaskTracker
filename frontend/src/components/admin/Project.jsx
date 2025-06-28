@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from "react";
 import {
-  Box, Card, CardContent, Typography, TextField, MenuItem, Button,
+  Box, Typography, TextField, MenuItem, Button,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
   Paper, Stack, Dialog, DialogTitle, DialogContent, DialogContentText,
-  DialogActions, Select, InputLabel, FormControl, Snackbar, Alert, Grid,LinearProgress
+  DialogActions, Select, InputLabel, FormControl, Snackbar, Alert
 } from "@mui/material";
-import Chip from "@mui/material/Chip";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 
@@ -25,18 +24,17 @@ const Project = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+  const [currentUserId, setCurrentUserId] = useState("");
 
   // Add/Edit dialog state
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editRow, setEditRow] = useState(null);
   const [editPid, setEditPid] = useState("");
-  const [editId, setEditId] = useState("");
   const [editTitle, setEditTitle] = useState("");
-  const [editStatus, setEditStatus] = useState("");
+  const [editDescription, setEditDescription] = useState("");
   const [editStart, setEditStart] = useState("");
   const [editDue, setEditDue] = useState("");
-  const [editTasks, setEditTasks] = useState("");
 
   // Delete dialog state
   const [openDialog, setOpenDialog] = useState(false);
@@ -60,6 +58,9 @@ const fetchProjects = async () => {
     const userId = currentUser?.id;
     if (!userId) throw new Error("User ID not found");
 
+    // Store current user ID for use in creating projects
+    setCurrentUserId(userId);
+
     // Pass user ID as query parameter
     const response = await fetch(`http://localhost:4000/api/projects?id=${userId}`);
     
@@ -80,12 +81,10 @@ const fetchProjects = async () => {
     setIsEditMode(false);
     setEditRow(null);
     setEditPid("");
-    setEditId("");
     setEditTitle("");
-    setEditStatus("");
+    setEditDescription("");
     setEditStart("");
     setEditDue("");
-    setEditTasks("");
     setDialogOpen(true);
   };
 
@@ -94,12 +93,10 @@ const fetchProjects = async () => {
     setIsEditMode(true);
     setEditRow(row);
     setEditPid(row.pid || "");
-    setEditId(row.id || "");
     setEditTitle(row.title || "");
-    setEditStatus(row.status || "");
+    setEditDescription(row.description || "");
     setEditStart(toInputDate(row.startDate));
     setEditDue(toInputDate(row.dueDate));
-    setEditTasks(row.tasks || "");
     setDialogOpen(true);
   };
 
@@ -107,12 +104,10 @@ const fetchProjects = async () => {
   const handleDialogSave = async () => {
     if (
       !editPid.trim() ||
-      !editId.trim() ||
       !editTitle.trim() ||
-      !editStatus.trim() ||
+      !editDescription.trim() ||
       !editStart.trim() ||
-      !editDue.trim() ||
-      !editTasks.trim()
+      !editDue.trim()
     ) {
       setError("All fields are required.");
       return;
@@ -132,12 +127,11 @@ const fetchProjects = async () => {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               pid: editPid,
-              id: editId,
+              id: currentUserId,
               title: editTitle,
-              status: editStatus,
+              description: editDescription,
               startDate: editStart,
-              dueDate: editDue,
-              tasks: editTasks,
+              dueDate: editDue
             }),
           }
         );
@@ -154,12 +148,11 @@ const fetchProjects = async () => {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             pid: editPid,
-            id: editId,
+            id: currentUserId,
             title: editTitle,
-            status: editStatus,
+            description: editDescription,
             startDate: editStart,
-            dueDate: editDue,
-            tasks: editTasks,
+            dueDate: editDue
           }),
         });
         if (!response.ok) throw new Error("Failed to create project");
@@ -215,12 +208,10 @@ const fetchProjects = async () => {
   // Form validation
   const isFormValid =
     editPid.trim() &&
-    editId.trim() &&
     editTitle.trim() &&
-    editStatus.trim() &&
+    editDescription.trim() &&
     editStart.trim() &&
-    editDue.trim() &&
-    editTasks.trim();
+    editDue.trim()
 
   // Date display for table
   function formatDate(dateString) {
@@ -256,23 +247,29 @@ const fetchProjects = async () => {
 
   return (
     <Box sx={{ bgcolor: "#fff", minHeight: "100vh", p: 3 }}>
-      <Typography
-        sx={{
-          background: "linear-gradient(90deg, #1e3a8a, #3b82f6)",
-          WebkitBackgroundClip: "text",
-          WebkitTextFillColor: "transparent",
-          color: "transparent",
-          fontWeight: 700,
-          fontSize: "3rem",
-          p: 2,
-          borderRadius: "8px",
-          m: 0,
-          display: "inline-block",
-          backgroundColor: "#fff",
-        }}
-      >
-        <b>Project Management</b>
-      </Typography>
+      <Box sx={{ mb: 3 }}>
+        <Typography
+          sx={{
+            background: "linear-gradient(90deg, #1e3a8a, #3b82f6)",
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+            color: "transparent",
+            fontWeight: 700,
+            fontSize: "3rem",
+            p: 2,
+            pb: 0.5,
+            borderRadius: "8px",
+            m: 0,
+            display: "inline-block",
+            backgroundColor: "#fff",
+          }}
+        >
+          <b>Project Management</b>
+        </Typography>
+        <Typography variant="subtitle1" sx={{ color: "#6b7280", pl: 2 }}>
+          Total Projects: {rows.length}
+        </Typography>
+      </Box>
 
       {/* Success Snackbar */}
       <Snackbar open={!!success} autoHideDuration={6000} onClose={handleCloseSnackbar}>
@@ -281,48 +278,7 @@ const fetchProjects = async () => {
         </Alert>
       </Snackbar>
 
-      <Grid container gap={4} justifyContent="center" alignItems="center" sx={{ mb: 3, pt: 10, pb: 10 }}>
-        <Grid item xs={12} md={4}>
-          <Card sx={{ bgcolor: "#fff", boxShadow: "0 2px 8px rgba(30, 58, 138, 0.08)", borderRadius: "16px", minHeight: 180, minWidth: 180, p: 2 }}>
-            <CardContent>
-              <Typography pb={3.8} variant="h6">Total Projects</Typography>
-              <Typography variant="h4"><b>{rows.length}</b></Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} md={4}>
-          <Card sx={{ bgcolor: "#fff", boxShadow: "0 2px 8px rgba(30, 58, 138, 0.08)", borderRadius: "16px", minHeight: 180, minWidth: 180, p: 2 }}>
-            <CardContent>
-              <Typography pb={3.8} variant="h6">In Progress</Typography>
-              <Typography variant="h4">
-                <b>{rows.filter((row) => row.status === "In Progress").length}</b>
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} md={4}>
-          <Card sx={{ bgcolor: "#fff", boxShadow: "0 2px 8px rgba(30, 58, 138, 0.08)", borderRadius: "16px", minHeight: 180, minWidth: 180, p: 2 }}>
-            <CardContent>
-              <Typography pb={3.8} variant="h6">Done</Typography>
-              <Typography variant="h4">
-                <b>{rows.filter((row) => row.status === "Done").length}</b>
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} md={4}>
-          <Card sx={{ bgcolor: "#fff", boxShadow: "0 2px 8px rgba(0, 0, 0, 0.08)", borderRadius: "16px", minHeight: 180, minWidth: 180, p: 2 }}>
-            <CardContent>
-              <Typography pb={3.8} variant="h6">Projects To Do</Typography>
-              <Typography variant="h4">
-                <b>{rows.filter((row) => row.status === "To Do").length}</b>
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
-
-      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2, mt: 2 }}>
+      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2, mt: 2 ,paddingTop: 6}}>
         <h2 style={{ margin: 0, marginLeft: 5, fontSize: "2rem" }}>All Projects</h2>
         <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
           <Button
@@ -377,11 +333,9 @@ const fetchProjects = async () => {
             <TableRow sx={{ background: "#f9f9f9", textShadow: "0 0 0.5px #000" }}>
               <TableCell>PID</TableCell>
               <TableCell>Title</TableCell>
-              <TableCell align="center">Status</TableCell>
+              <TableCell align="center">Description</TableCell>
               <TableCell align="right">Start Date</TableCell>
               <TableCell align="right">Due Date</TableCell>
-              <TableCell align="center">Progress</TableCell>
-              <TableCell align="right">Tasks</TableCell>
               <TableCell align="center">Actions</TableCell>
             </TableRow>
           </TableHead>
@@ -396,65 +350,9 @@ const fetchProjects = async () => {
               >
                 <TableCell>{row.pid}</TableCell>
                 <TableCell component="th" scope="row">{row.title}</TableCell>
-                <TableCell align="center">
-                  <Chip
-                    label={row.status}
-                    color={
-                      row.status === "Done"
-                        ? "success"
-                        : row.status === "To Do"
-                        ? "error"
-                        : "primary"
-                    }
-                    variant="outlined"
-                    size="small"
-                    sx={{
-                      fontWeight: 600,
-                      letterSpacing: 0.5,
-                      bgcolor:
-                        row.status === "Done"
-                          ? "#22c55e22"
-                          : row.status === "To Do"
-                          ? "#ef444422"
-                          : "#3b82f622",
-                      color:
-                        row.status === "Done"
-                          ? "#16a34a"
-                          : row.status === "To Do"
-                          ? "#b91c1c"
-                          : "#1d4ed8",
-                      border: "none",
-                    }}
-                  />
-                </TableCell>
+                <TableCell align="center">{row.description}</TableCell>
                 <TableCell align="right">{formatDate(row.startDate)}</TableCell>
                 <TableCell align="right">{formatDate(row.dueDate)}</TableCell>
-                <TableCell align="right">
-                  {(() => {
-                    const [completed, total] = row.tasks.split("/").map(Number);
-                    const percent = total ? Math.round((completed / total) * 100) : 0;
-                    return (
-                      <Box sx={{ minWidth: 80 }}>
-                        <LinearProgress
-                          variant="determinate"
-                          value={percent}
-                          sx={{
-                            height: 8,
-                            borderRadius: 5,
-                            backgroundColor: "#e0e7ef",
-                            "& .MuiLinearProgress-bar": {
-                              backgroundColor: "#6366f1"
-                            }
-                          }}
-                        />
-                        <Typography variant="body2" align="center" sx={{ mt: 0.5 }}>
-                          {percent}%
-                        </Typography>
-                      </Box>
-                    );
-                  })()}
-                </TableCell>
-                <TableCell align="right">{row.tasks}</TableCell>
                 <TableCell align="right">
                   <Stack spacing={2} direction="row" justifyContent="center">
                     <Button
@@ -519,32 +417,20 @@ const fetchProjects = async () => {
           />
           <TextField
             margin="dense"
-            label="ID"
-            fullWidth
-            value={editId}
-            onChange={(e) => setEditId(e.target.value)}
-            sx={{ mb: 2 }}
-          />
-          <TextField
-            margin="dense"
             label="Title"
             fullWidth
             value={editTitle}
             onChange={(e) => setEditTitle(e.target.value)}
             sx={{ mb: 2 }}
           />
-          <FormControl fullWidth margin="dense" sx={{ mb: 2 }}>
-            <InputLabel>Status</InputLabel>
-            <Select
-              value={editStatus}
-              label="Status"
-              onChange={(e) => setEditStatus(e.target.value)}
-            >
-              <MenuItem value="In Progress">In Progress</MenuItem>
-              <MenuItem value="Done">Done</MenuItem>
-              <MenuItem value="To Do">To Do</MenuItem>
-            </Select>
-          </FormControl>
+          <TextField
+            margin="dense"
+            label="Description"
+            fullWidth
+            value={editDescription}
+            onChange={(e) => setEditDescription(e.target.value)}
+            sx={{ mb: 2 }}
+          />
           <TextField
             margin="dense"
             label="Start Date"
@@ -563,14 +449,6 @@ const fetchProjects = async () => {
             fullWidth
             margin="dense"
             InputLabelProps={{ shrink: true }}
-            sx={{ mb: 2 }}
-          />
-          <TextField
-            margin="dense"
-            label="Tasks"
-            fullWidth
-            value={editTasks}
-            onChange={(e) => setEditTasks(e.target.value)}
             sx={{ mb: 2 }}
           />
         </DialogContent>
