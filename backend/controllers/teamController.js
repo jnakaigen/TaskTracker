@@ -1,4 +1,6 @@
 const Team = require('../models/teamModel');
+const Task = require('../models/taskModel');
+
 
 // GET all teams
 const getTeams = async (req, res) => {
@@ -40,6 +42,8 @@ const deleteTeam = async (req, res) => {
     try {
         const team = await Team.findOneAndDelete({ id: id });
         if (!team) return res.status(404).json({ message: 'Team not found' });
+               // Delete all tasks assigned to this member
+        await Task.deleteMany({ assignedTo: id });
         res.status(200).json({ message: 'Team deleted successfully' });
     } catch (error) {
         res.status(500).json({ error: error.message });
