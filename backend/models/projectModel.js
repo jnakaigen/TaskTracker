@@ -7,12 +7,16 @@ const projectSchema = new Schema({
         required: true ,
         unique: true 
     },
-    id: { 
+    id:{ 
         type: String,
         required: true, 
         ref: 'User'  // Now 'id' references the User model
     },
     title: { 
+        type: String, 
+        required: true 
+    },
+    description: {   // Added description field
         type: String, 
         required: true 
     },
@@ -23,15 +27,6 @@ const projectSchema = new Schema({
     dueDate: { 
         type: Date, 
         required: true 
-    },
-    status: { 
-        type: String, 
-        required: true,
-        enum: ['To Do', 'In Progress', 'Done'] 
-    },
-    tasks: {
-        type: String,
-        required: true
     }
 }, { timestamps: true });
 
