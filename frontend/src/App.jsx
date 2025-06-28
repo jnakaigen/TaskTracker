@@ -14,7 +14,7 @@ import Task from './components/admin/Task.jsx'
 import Team from './components/admin/Team.jsx'
 import Front from './components/Front.jsx'
 import Login from './components/Login.jsx'
-
+import MyTasks from './components/member/MyTasks.jsx'
 
 const App = () => {
   return (
@@ -35,6 +35,7 @@ const App = () => {
   {/* MEMBER DASHBOARD */}
   <Route path="/memdash" element={<MemDashLayout />}>
     <Route index element={<MemDash />} />
+    <Route path="mytasks" element={<MyTasks />} />
   </Route>
 </Routes>
 
