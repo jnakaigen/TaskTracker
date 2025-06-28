@@ -148,9 +148,20 @@ const Task = () => {
     return matchesStatus && matchesProject && matchesMember && matchesSearch;
   });
 
+  // --- Only this function is changed for your requirement ---
   const handleCreateTask = async () => {
     if (!newTask.title || !newTask.dueDate) {
       setError('Title and Due Date are required');
+      return;
+    }
+
+    // Check if due date is before today
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    const dueDate = new Date(newTask.dueDate);
+    dueDate.setHours(0,0,0,0);
+    if (dueDate < today) {
+      setError('Please select today or a future date for the due date.');
       return;
     }
 
@@ -185,6 +196,7 @@ const Task = () => {
       setLoading(false);
     }
   };
+  // --- End of change ---
 
   const handleDelete = async (index) => {
     const taskToDelete = filteredTasks[index];
@@ -645,7 +657,7 @@ const Task = () => {
           </Card>
         </Box>
       </Box>
-    </Box>
+       </Box>
   );
 };
 

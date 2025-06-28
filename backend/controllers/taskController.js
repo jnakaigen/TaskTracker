@@ -73,7 +73,6 @@ const createTask = async (req, res) => {
         res.status(400).json({ error: error.message });
     }
 }
-
 // Delete a task
 const deleteTask = async (req, res) => {
     const { id } = req.params;
