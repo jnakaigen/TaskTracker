@@ -121,32 +121,6 @@ const Task = () => {
     fetchProjects();
   }, []);
 
-  // Fetch team members
-  useEffect(() => {
-    const fetchTeamMembers = async () => {
-      try {
-        const response = await fetch('http://localhost:4000/api/users');
-        if (!response.ok) {
-          throw new Error('Failed to fetch users');
-        }
-        const data = await response.json();
-        
-        // Extract all user IDs from both Admin and Member groups
-        const allUserIds = [
-          ...(data.Admin || []).map(user => user.id),
-          ...(data.Member || []).map(user => user.id)
-        ];
-        if (!response.ok) {
-          throw new Error('Failed to fetch users');
-        }
-        setTeamMembers(allUserIds);
-      } catch (err) {
-        setError('Failed to load team members: ' + err.message);
-      }
-    };
-
-    fetchTeamMembers();
-  }, []);
 
   // Filter tasks based on search and filters
   const filteredTasks = tasks.filter((task) => {

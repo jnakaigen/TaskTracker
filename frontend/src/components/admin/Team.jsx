@@ -14,7 +14,7 @@ const fadeIn = keyframes`
 `;
 
 export default function TeamDashboard() {
-  const [members, setMembers] = useState([]);
+  const [teamMembers, setTeamMembers] = useState([]);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
@@ -27,20 +27,16 @@ export default function TeamDashboard() {
 
 
   // Fetch members from backend
-  useEffect(() => {
-    const fetchMembers = async () => {
-  try {
-    const user = JSON.parse(localStorage.getItem('currentUser'));
-const res = await fetch(`http://localhost:4000/api/teams?adminId=${user.id}`);
-    const data = await res.json();
+ useEffect(() => {
 
-    setMembers(data);
-  } catch (err) {
-    setError('Failed to fetch teams');
-  }
-};
-    fetchMembers();
-  }, []);
+  const fetchTeamMembers = async () => {
+    const user = JSON.parse(localStorage.getItem('currentUser'));
+    const res = await fetch(`http://localhost:4000/api/teams?adminId=${user.id}`);
+    const data = await res.json();
+    setTeamMembers(data);
+  };
+  fetchTeamMembers();
+}, []);
 
 
   // Add member (POST)
@@ -54,7 +50,7 @@ const res = await fetch(`http://localhost:4000/api/teams?adminId=${user.id}`);
       });
       if (response.ok) {
         const added = await response.json();
-        setMembers(prev => [...prev, added]);
+        setTeamMembers(prev => [...prev, added]);
         setAddDialogOpen(false);
         setNewMember({ id: '', name: '', email: '', role: '', img: '/avatar-placeholder.png' });
         setSuccess('Team created successfully');
@@ -75,7 +71,7 @@ const res = await fetch(`http://localhost:4000/api/teams?adminId=${user.id}`);
       });
       if (response.ok) {
         const updated = await response.json();
-        setMembers(prev => prev.map(m => (m.id === updated.id ? updated : m)));
+        setTeamMembers(prev => prev.map(m => (m.id === updated.id ? updated : m)));
         setEditDialogOpen(false);
       }
     } catch (err) {
@@ -91,7 +87,7 @@ const res = await fetch(`http://localhost:4000/api/teams?adminId=${user.id}`);
         method: 'DELETE'
       });
       if (response.ok) {
-        setMembers(prev => prev.filter(m => m.id !== selectedMember.id));
+        setTeamMembers(prev => prev.filter(m => m.id !== selectedMember.id));
         setDeleteDialogOpen(false);
       }
     } catch (err) {
@@ -110,7 +106,7 @@ const res = await fetch(`http://localhost:4000/api/teams?adminId=${user.id}`);
     setDeleteDialogOpen(true);
   };
 
-console.log("members", members);
+console.log("teamMembers", teamMembers);
 
 return (
     <Box style={{
@@ -134,7 +130,7 @@ return (
         <Box>
           <Typography variant="h4" fontWeight={700} color="primary">Team Members</Typography>
           <Typography variant="body1" color="text.secondary">
-            {members.length} Members: 1 Admin, {members.length - 1} Team Members
+            {teamMembers.length} Members: 1 Admin, {teamMembers.length - 1} Team Members
           </Typography>
         </Box>
         <Button
@@ -166,7 +162,7 @@ return (
             </TableRow>
           </TableHead>
           <TableBody>
-            {members.map((member) => (
+            {teamMembers.map((member) => (
               <TableRow key={member.id} hover sx={{
                 transition: 'all 0.2s ease-in-out',
                 '&:hover': { backgroundColor: '#f0f7ff' }
