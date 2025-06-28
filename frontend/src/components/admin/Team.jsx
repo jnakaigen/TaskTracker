@@ -53,7 +53,7 @@ export default function TeamDashboard() {
         setTeamMembers(prev => [...prev, added]);
         setAddDialogOpen(false);
         setNewMember({ id: '', name: '', email: '', role: '', img: '/avatar-placeholder.png' });
-        setSuccess('Team created successfully');
+        setSuccess('Member created successfully');
       }
     } catch (err) {
       console.error('Failed to add member:', err);
@@ -64,6 +64,7 @@ export default function TeamDashboard() {
   // Edit member (PUT)
   const handleEditSave = async () => {
     try {
+      const user = JSON.parse(localStorage.getItem('currentUser'));
       const response = await fetch(`http://localhost:4000/api/teams/${selectedMember.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -73,6 +74,7 @@ export default function TeamDashboard() {
         const updated = await response.json();
         setTeamMembers(prev => prev.map(m => (m.id === updated.id ? updated : m)));
         setEditDialogOpen(false);
+        setSuccess('Team member updated successfully');
       }
     } catch (err) {
       console.error('Failed to update member:', err);

@@ -1,4 +1,5 @@
 const Project = require('../models/projectModel');
+const Task = require('../models/taskModel');
 const mongoose = require('mongoose');
 
 // GET all projects
@@ -54,6 +55,8 @@ const deleteProject = async (req, res) => {
     try {
         const project = await Project.findByIdAndDelete(id);  // Use MongoDB _id instead of pid
         if (!project) return res.status(404).json({ message: 'Project not found' });
+         // Delete all tasks assigned to this project
+          await Task.deleteMany({ assignedTo: id });
         res.status(200).json({ message: 'Project deleted successfully' });
     } catch (error) {
         res.status(500).json({ error: error.message });
