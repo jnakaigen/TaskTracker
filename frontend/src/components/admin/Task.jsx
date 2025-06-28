@@ -164,7 +164,7 @@ const Task = () => {
       return;
     }
 
-    // Check if due date is before today
+    // Check if due date is not before the current date
     const today = new Date();
     today.setHours(0,0,0,0);
     const dueDate = new Date(newTask.dueDate);
