@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Button, 
-  FormControl, 
-  InputLabel, 
-  Select, 
-  MenuItem, 
-  Box, 
+import {
+  Button,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Box,
   Typography,
   Paper,
   Avatar,
@@ -27,41 +27,38 @@ const Login = () => {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    // Fetch admins and initial members
-    const fetchUsers = async () => {
+    const fetchAll = async () => {
+      setLoading(true);
       try {
-        const response = await fetch('http://localhost:4000/api/users');
-        if (!response.ok) throw new Error('Network response was not ok');
-        const data = await response.json();
-        setUsers({ Admin: data.Admin, Member: data.Member });
+        // Fetch users and team members simultaneously
+        const [usersRes, teamsRes] = await Promise.all([
+          fetch('http://localhost:4000/api/users'),
+          fetch('http://localhost:4000/api/teams')
+        ]);
+
+        if (!usersRes.ok) throw new Error('Failed to load users');
+        if (!teamsRes.ok) throw new Error('Failed to load team members');
+
+        const usersData = await usersRes.json();
+        const teamsData = await teamsRes.json();
+
+        // Combine results
+        setUsers({
+          Admin: usersData.Admin,
+          Member: teamsData.map((t) => ({
+            id: t.id,
+            name: t.name
+          }))
+        });
       } catch (err) {
+        console.error('Fetch error:', err);
         setError('Failed to load users. Please try again later.');
-        console.error('Fetch users error:', err);
       } finally {
         setLoading(false);
       }
     };
 
-    // Fetch team members to populate Member dropdown
-    const fetchTeamMembers = async () => {
-      try {
-        const response = await fetch('http://localhost:4000/api/teams');
-        if (!response.ok) throw new Error('Network response was not ok');
-        const data = await response.json();
-        setUsers(prev => ({
-          ...prev,
-          Member: data.map(t => ({
-            id: t.id,
-            name: t.name
-          }))
-        }));
-      } catch (err) {
-        console.error('Fetch team members error:', err);
-      }
-    };
-
-    fetchUsers();
-    fetchTeamMembers();
+    fetchAll();
   }, []);
 
   const handleRoleChange = (e) => {
@@ -83,6 +80,7 @@ const Login = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: userId })
       });
+
       const json = await res.json();
       if (res.ok) {
         localStorage.setItem('currentUser', JSON.stringify(json.user));
@@ -98,14 +96,16 @@ const Login = () => {
   if (loading) return <Typography>Loading...</Typography>;
 
   return (
-    <Box sx={{
-      minHeight: '100vh',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      p: 2
-    }}>
+    <Box
+      sx={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        p: 2
+      }}
+    >
       <AnimatedPaper
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -122,7 +122,15 @@ const Login = () => {
         }}
       >
         <Box sx={{ textAlign: 'center', mb: 3 }}>
-          <Avatar sx={{ bgcolor: 'primary.main', width: 60, height: 60, mx: 'auto', mb: 2 }}>
+          <Avatar
+            sx={{
+              bgcolor: 'primary.main',
+              width: 60,
+              height: 60,
+              mx: 'auto',
+              mb: 2
+            }}
+          >
             <LockOutlined fontSize="large" />
           </Avatar>
           <Typography variant="h4" fontWeight={700} gutterBottom>
@@ -165,11 +173,12 @@ const Login = () => {
               onChange={handleUserChange}
               sx={{ borderRadius: 2 }}
             >
-              {role && users[role].map(u => (
-                <MenuItem key={u.id} value={u.id}>
-                  {u.name}
-                </MenuItem>
-              ))}
+              {role &&
+                users[role]?.map((u) => (
+                  <MenuItem key={u.id} value={u.id}>
+                    {u.name}
+                  </MenuItem>
+                ))}
             </Select>
           </FormControl>
 
@@ -193,7 +202,11 @@ const Login = () => {
           </AnimatedButton>
         </form>
 
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 3, textAlign: 'center' }}>
+        <Typography
+          variant="body2"
+          color="text.secondary"
+          sx={{ mt: 3, textAlign: 'center' }}
+        >
           {role === 'Admin'
             ? 'Administrators can create and manage projects'
             : 'Team members can view assigned projects and tasks'}
