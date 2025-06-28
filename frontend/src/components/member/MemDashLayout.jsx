@@ -14,17 +14,16 @@ import {
   Toolbar,
   Typography,
   styled,
-  alpha
+  alpha,
+  Button
 } from '@mui/material';
+import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+
 import MenuIcon from '@mui/icons-material/Menu';
 import DashboardIcon from '@mui/icons-material/Dashboard';
-import LayersIcon from '@mui/icons-material/Layers';
-import GroupIcon from '@mui/icons-material/Group';
-import WorkIcon from '@mui/icons-material/Work';
-import { NavLink } from 'react-router-dom';
-import { useNavigate } from 'react-router-dom';
-import Button from '@mui/material/Button';
+import ChecklistIcon from '@mui/icons-material/Checklist'; // ✅ Icon for MyTasks
 import LogoutIcon from '@mui/icons-material/Logout';
+
 const drawerWidth = 260;
 
 const StyledNavLink = styled(NavLink)(({ theme }) => ({
@@ -43,32 +42,38 @@ const StyledNavLink = styled(NavLink)(({ theme }) => ({
   },
 }));
 
-const MemDashLayout = ({ children }) => {
+const MemDashLayout = () => {
   const [mobileOpen, setMobileOpen] = React.useState(false);
+  const navigate = useNavigate();
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
   };
 
+  const handleLogout = () => {
+    navigate('/login');
+  };
+
   const menuItems = [
     { text: 'Dashboard', icon: <DashboardIcon />, path: '/memdash' },
+    { text: 'My Tasks', icon: <ChecklistIcon />, path: '/memdash/mytasks' } // ✅ Fixed
   ];
 
   const drawer = (
-    <Box sx={{ 
+    <Box sx={{
       height: '100%',
       display: 'flex',
       flexDirection: 'column',
       background: 'linear-gradient(180deg, #ffffff 0%, #f8faff 100%)',
       borderRight: '1px solid rgba(0, 0, 0, 0.08)'
     }}>
-      <Toolbar sx={{ 
+      <Toolbar sx={{
         minHeight: '80px !important',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center'
       }}>
-        <Typography variant="h6" noWrap sx={{ 
+        <Typography variant="h6" noWrap sx={{
           fontWeight: 700,
           background: 'linear-gradient(90deg, #1976d2 0%, #5e35b1 100%)',
           WebkitBackgroundClip: 'text',
@@ -88,8 +93,8 @@ const MemDashLayout = ({ children }) => {
                 },
               }}>
                 <ListItemIcon sx={{ minWidth: '40px' }}>{icon}</ListItemIcon>
-                <ListItemText 
-                  primary={text} 
+                <ListItemText
+                  primary={text}
                   primaryTypographyProps={{ fontWeight: 500 }}
                 />
               </ListItemButton>
@@ -105,18 +110,15 @@ const MemDashLayout = ({ children }) => {
       </Box>
     </Box>
   );
-    const navigate=useNavigate();
-    const handleLogout = () => {
-      navigate('/login');
-    };
+
   return (
-    <Box sx={{ 
-      display: 'flex', 
-      minHeight: '100vh', 
+    <Box sx={{
+      display: 'flex',
+      minHeight: '100vh',
       backgroundColor: '#f9fafc'
     }}>
       <CssBaseline />
-      
+
       {/* AppBar */}
       <AppBar
         position="fixed"
@@ -143,17 +145,17 @@ const MemDashLayout = ({ children }) => {
             Dashboard Overview
           </Typography>
           <Button
-                    variant="outlined"
-                    startIcon={<LogoutIcon />}
-                    onClick={handleLogout}
-                    sx={{
-                      ml: 2,
-                      textTransform: 'none',
-                      borderRadius: 2
-                    }}
-                  >
-                    Logout
-                  </Button>
+            variant="outlined"
+            startIcon={<LogoutIcon />}
+            onClick={handleLogout}
+            sx={{
+              ml: 2,
+              textTransform: 'none',
+              borderRadius: 2
+            }}
+          >
+            Logout
+          </Button>
         </Toolbar>
       </AppBar>
 
@@ -170,7 +172,7 @@ const MemDashLayout = ({ children }) => {
           ModalProps={{ keepMounted: true }}
           sx={{
             display: { xs: 'block', sm: 'none' },
-            '& .MuiDrawer-paper': { 
+            '& .MuiDrawer-paper': {
               width: drawerWidth,
               boxShadow: '4px 0 20px rgba(0, 0, 0, 0.05)'
             },
@@ -178,13 +180,13 @@ const MemDashLayout = ({ children }) => {
         >
           {drawer}
         </Drawer>
-        
+
         {/* Desktop Drawer */}
         <Drawer
           variant="permanent"
           sx={{
             display: { xs: 'none', sm: 'block' },
-            '& .MuiDrawer-paper': { 
+            '& .MuiDrawer-paper': {
               width: drawerWidth,
               borderRight: 'none',
               boxShadow: '4px 0 20px rgba(0, 0, 0, 0.05)'
@@ -208,12 +210,12 @@ const MemDashLayout = ({ children }) => {
         }}
       >
         <Toolbar sx={{ minHeight: '80px !important' }} />
-        <Box sx={{ 
+        <Box sx={{
           borderRadius: 3,
           minHeight: 'calc(100vh - 120px)',
           position: 'relative'
         }}>
-          {children}
+          <Outlet />
         </Box>
       </Box>
     </Box>
