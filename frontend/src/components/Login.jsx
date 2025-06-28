@@ -27,6 +27,7 @@ const Login = () => {
   const [error, setError] = useState('');
 
   useEffect(() => {
+    // Fetch admins and initial members
     const fetchUsers = async () => {
       try {
         const response = await fetch('http://localhost:4000/api/users');
@@ -40,7 +41,27 @@ const Login = () => {
         setLoading(false);
       }
     };
+
+    // Fetch team members to populate Member dropdown
+    const fetchTeamMembers = async () => {
+      try {
+        const response = await fetch('http://localhost:4000/api/teams');
+        if (!response.ok) throw new Error('Network response was not ok');
+        const data = await response.json();
+        setUsers(prev => ({
+          ...prev,
+          Member: data.map(t => ({
+            id: t.id,
+            name: t.name
+          }))
+        }));
+      } catch (err) {
+        console.error('Fetch team members error:', err);
+      }
+    };
+
     fetchUsers();
+    fetchTeamMembers();
   }, []);
 
   const handleRoleChange = (e) => {
@@ -53,29 +74,26 @@ const Login = () => {
   };
 
   const handleLogin = async (e) => {
-  e.preventDefault();
-  if (!userId) return;
-  
-  try {
-    const res = await fetch('http://localhost:4000/api/users/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: userId }) // Send only ID
-    });
-    
-    const json = await res.json();
-    console.log("Login response:", json);
-    if (res.ok) {
-      console.log("Storing user:", json.user);
-      localStorage.setItem('currentUser', JSON.stringify(json.user));
-      navigate(json.redirectUrl);
-    } else {
-      setError(json.error || 'Login failed');
+    e.preventDefault();
+    if (!userId) return;
+
+    try {
+      const res = await fetch('http://localhost:4000/api/users/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: userId })
+      });
+      const json = await res.json();
+      if (res.ok) {
+        localStorage.setItem('currentUser', JSON.stringify(json.user));
+        navigate(json.redirectUrl);
+      } else {
+        setError(json.error || 'Login failed');
+      }
+    } catch (err) {
+      setError('Login error. Please try again.');
     }
-  } catch (err) {
-    setError('Login error. Please try again.');
-  }
-};
+  };
 
   if (loading) return <Typography>Loading...</Typography>;
 
@@ -147,7 +165,7 @@ const Login = () => {
               onChange={handleUserChange}
               sx={{ borderRadius: 2 }}
             >
-              {role && users[role].map((u) => (
+              {role && users[role].map(u => (
                 <MenuItem key={u.id} value={u.id}>
                   {u.name}
                 </MenuItem>
