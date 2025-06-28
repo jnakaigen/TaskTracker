@@ -33,6 +33,7 @@ app.use('/api/tasks', tasksRoutes);
 app.use('/api/users', usersRoutes);     // Add users routes
 app.use('/api/teams', teamsRoutes);     // Add teams routes
 app.use('/api/projects', projectsRoutes); // Add projects routes
+app.use('/api/dashboard', require('./routes/dashboard'));
 
 // 2nd step => message visible in browser (route)
 /* app.get('/', (req, res) => {
