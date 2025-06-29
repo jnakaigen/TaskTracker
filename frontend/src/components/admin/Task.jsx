@@ -3,13 +3,65 @@ import {
   Box, Card, CardContent, Typography, TextField, MenuItem,
   Button, Table, TableBody, TableCell, TableContainer, TableHead,
   TableRow, Paper, IconButton, Stack, Snackbar, Alert, Chip,
+  Avatar, LinearProgress, Tooltip, Divider
 } from '@mui/material';
-import { Edit, Delete, CheckCircle, AccessTime, ErrorOutline } from '@mui/icons-material';
+import { 
+  Edit, Delete, CheckCircle, AccessTime, ErrorOutline, 
+  Search, AddTask, Task as TaskIcon, CalendarToday, Group, Folder
+} from '@mui/icons-material';
+import { styled } from '@mui/material/styles';
 
-const Task = () => {
+// Custom styled components
+const StyledCard = styled(Card)(({ theme }) => ({
+  borderRadius: '12px',
+  boxShadow: '0 4px 20px 0 rgba(0,0,0,0.12)',
+  transition: 'transform 0.3s, box-shadow 0.3s',
+  '&:hover': {
+    transform: 'translateY(-2px)',
+    boxShadow: '0 6px 24px 0 rgba(0,0,0,0.15)'
+  }
+}));
+
+const StatusChip = styled(Chip)(({ status }) => ({
+  fontWeight: 600,
+  ...(status === 'Done' && {
+    backgroundColor: '#e6f7e6',
+    color: '#2e7d32'
+  }),
+  ...(status === 'In Progress' && {
+    backgroundColor: '#fff8e1',
+    color: '#ed6c02'
+  }),
+  ...(status === 'To Do' && {
+    backgroundColor: '#e3f2fd',
+    color: '#1976d2'
+  })
+}));
+
+// Helper function for avatar colors
+function stringToColor(string) {
+  if (!string) return '#000000';
+  let hash = 0;
+  let i;
+
+  for (i = 0; i < string.length; i += 1) {
+    hash = string.charCodeAt(i) + ((hash << 5) - hash);
+  }
+
+  let color = '#';
+
+  for (i = 0; i < 3; i += 1) {
+    const value = (hash >> (i * 8)) & 0xff;
+    color += `00${value.toString(16)}`.slice(-2);
+  }
+
+  return color;
+}
+
+const TaskManagement = () => {
   // State variables
   const [tasks, setTasks] = useState([]);
-  const [allTasks, setAllTasks] = useState([]); // Store all tasks from API
+  const [allTasks, setAllTasks] = useState([]);
   const [projects, setProjects] = useState([]);
   const [teamMembers, setTeamMembers] = useState([]);
   const [newTask, setNewTask] = useState({
@@ -67,7 +119,7 @@ const Task = () => {
           throw new Error('Failed to fetch tasks');
         }
         const data = await response.json();
-        setAllTasks(data); // Store all tasks
+        setAllTasks(data);
       } catch (err) {
         setError(err.message);
       } finally {
@@ -76,17 +128,17 @@ const Task = () => {
     };
     
     const fetchTeamMembers = async () => {
-    const user = JSON.parse(localStorage.getItem('currentUser'));
-    const res = await fetch(`http://localhost:4000/api/teams?adminId=${user.id}`);
-    const data = await res.json();
-    setTeamMembers(data);
-  };
+      const user = JSON.parse(localStorage.getItem('currentUser'));
+      const res = await fetch(`http://localhost:4000/api/teams?adminId=${user.id}`);
+      const data = await res.json();
+      setTeamMembers(data);
+    };
   
-  fetchTasks();
-  fetchTeamMembers();
+    fetchTasks();
+    fetchTeamMembers();
   }, []);
 
-  // Filter tasks based on user's projects whenever allTasks or projects change
+  // Filter tasks based on user's projects
   useEffect(() => {
     if (allTasks.length > 0 && projects.length > 0) {
       const filteredTasks = allTasks.filter(task => 
@@ -94,7 +146,6 @@ const Task = () => {
       );
       setTasks(filteredTasks);
     } else if (allTasks.length > 0 && projects.length === 0) {
-      // If no projects loaded yet, show empty tasks
       setTasks([]);
     }
   }, [allTasks, userProjectIds]);
@@ -103,10 +154,7 @@ const Task = () => {
   useEffect(() => {
     const fetchProjects = async () => {
       try {
-        // Get current admin from localStorage
         const user = JSON.parse(localStorage.getItem('currentUser'));
-        console.log('Current user from localStorage:', user);
-        
         const response = await fetch(`http://localhost:4000/api/projects?id=${user.id}`);
         if (!response.ok) {
           throw new Error('Failed to fetch projects');
@@ -121,24 +169,23 @@ const Task = () => {
     fetchProjects();
   }, []);
 
-
   // Filter tasks based on search and filters
-  const filteredTasks = tasks.filter((task) => {
-    const matchesStatus = statusFilter === 'All' || task.status === statusFilter;
-    const matchesProject = projectFilter === 'All' || task.project?.toString() === projectFilter;
-    const matchesMember = memberFilter === 'All' || task.assignedTo?.toString() === memberFilter;
-    const matchesSearch = task.title.toLowerCase().includes(search.toLowerCase());
-    return matchesStatus && matchesProject && matchesMember && matchesSearch;
-  });
+  const filteredTasks = useMemo(() => {
+    return tasks.filter((task) => {
+      const matchesStatus = statusFilter === 'All' || task.status === statusFilter;
+      const matchesProject = projectFilter === 'All' || task.project?.toString() === projectFilter;
+      const matchesMember = memberFilter === 'All' || task.assignedTo?.toString() === memberFilter;
+      const matchesSearch = task.title.toLowerCase().includes(search.toLowerCase());
+      return matchesStatus && matchesProject && matchesMember && matchesSearch;
+    });
+  }, [tasks, statusFilter, projectFilter, memberFilter, search]);
 
-  // --- Only this function is changed for your requirement ---
   const handleCreateTask = async () => {
     if (!newTask.title || !newTask.dueDate) {
       setError('Title and Due Date are required');
       return;
     }
 
-    // Check if due date is not before the current date
     const today = new Date();
     today.setHours(0,0,0,0);
     const dueDate = new Date(newTask.dueDate);
@@ -148,7 +195,6 @@ const Task = () => {
       return;
     }
 
-    // Ensure the new task is assigned to one of the user's projects
     if (!newTask.project || !userProjectIds.includes(newTask.project)) {
       setError('Please select a valid project');
       return;
@@ -162,7 +208,7 @@ const Task = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ ...newTask, adminId: user.id }) // <-- Make sure adminId is sent!
+        body: JSON.stringify({ ...newTask, adminId: user.id })
       });
 
       if (!response.ok) {
@@ -171,8 +217,8 @@ const Task = () => {
 
       const createdTask = await response.json();
       setTasks(prev => [...prev, createdTask]);
-      setAllTasks(prev => [...prev, createdTask]); // Also update allTasks
-      setNewTask({ title: '', description: '', dueDate: '', assignedTo: null, project: null, status: 'To Do' });
+      setAllTasks(prev => [...prev, createdTask]);
+      setNewTask({ title: '', description: '', dueDate: '', assignedTo: '', project: '', status: 'To Do' });
       setSuccess('Task created successfully');
     } catch (err) {
       setError(err.message);
@@ -180,14 +226,13 @@ const Task = () => {
       setLoading(false);
     }
   };
-  // --- End of change ---
 
   const handleDelete = async (index) => {
     const taskToDelete = filteredTasks[index];
     try {
       setLoading(true);
       setTasks(prev => prev.filter(task => task._id !== taskToDelete._id));
-      setAllTasks(prev => prev.filter(task => task._id !== taskToDelete._id)); // Also update allTasks
+      setAllTasks(prev => prev.filter(task => task._id !== taskToDelete._id));
       setRecentlyDeleted(taskToDelete);
       const timeout = setTimeout(() => {
         setRecentlyDeleted(null);
@@ -195,13 +240,10 @@ const Task = () => {
       }, 5000);
       
       setUndoTimeout(timeout);
-      
       setSuccess('Task deleted.');
-      
     } catch (err) {
       setError(err.message);
-    }
-    finally {
+    } finally {
       setLoading(false);
     }
   };
@@ -224,7 +266,7 @@ const Task = () => {
     
     try {
       setTasks(prev => [...prev, recentlyDeleted]);
-      setAllTasks(prev => [...prev, recentlyDeleted]); // Also update allTasks
+      setAllTasks(prev => [...prev, recentlyDeleted]);
       setRecentlyDeleted(null);
 
       if (undoTimeout) {
@@ -244,7 +286,6 @@ const Task = () => {
   };
 
   const handleUpdateTask = async () => {
-    // Ensure the updated task is still assigned to one of the user's projects
     if (!editTask.project || !userProjectIds.includes(editTask.project)) {
       setError('Please select a valid project');
       return;
@@ -266,7 +307,7 @@ const Task = () => {
 
       const updatedTask = await response.json();
       setTasks(prev => prev.map(task => task._id === updatedTask._id ? updatedTask : task));
-      setAllTasks(prev => prev.map(task => task._id === updatedTask._id ? updatedTask : task)); // Also update allTasks
+      setAllTasks(prev => prev.map(task => task._id === updatedTask._id ? updatedTask : task));
       setEditingIndex(null);
       setEditTask(null);
       setSuccess('Task updated successfully');
@@ -283,23 +324,72 @@ const Task = () => {
     setEditTask(null);
   };
 
-  const stats = [
-    { label: 'Total Tasks', value: tasks.length, description: 'Overall tasks across all projects', icon: <CheckCircle color="primary" /> },
-    { label: 'Completed Tasks', value: tasks.filter(t => t.status === 'Done').length, description: 'Tasks finished this period', icon: <CheckCircle sx={{ color: '#ddffbd' }} /> },
-    { label: 'Pending Tasks', value: tasks.filter(t => t.status === 'To Do').length, description: 'Tasks awaiting completion', icon: <AccessTime color="warning" /> },
-    { label: 'In Progress', value: tasks.filter(t => t.status === 'In Progress').length, description: 'Currently active tasks', icon: <ErrorOutline color="error" /> },
-  ];
-
   const handleCloseSnackbar = () => {
     setError(null);
     setSuccess(null);
   };
 
-  return (
-    <Box p={3} sx={{ bgcolor: '#ffffff' }}>
-      <Typography variant="h4" mb={3} fontWeight={600}>Task Management</Typography>
+  // Enhanced stats with icons and colors
+  const stats = [
+    { 
+      label: 'Total Tasks', 
+      value: tasks.length, 
+      description: 'Overall tasks across all projects', 
+      icon: <TaskIcon color="primary" />,
+      color: 'linear-gradient(135deg, #e8dde3 0%, #f3e7e9 100%)'
+    },
+    { 
+      label: 'Completed', 
+      value: tasks.filter(t => t.status === 'Done').length, 
+      description: 'Tasks finished this period', 
+      icon: <CheckCircle sx={{ color: '#4caf50' }} />,
+      color: 'linear-gradient(135deg, #ddffbd 0%, #ccfbff 100%)'
+    },
+    { 
+      label: 'Pending', 
+      value: tasks.filter(t => t.status === 'To Do').length, 
+      description: 'Tasks awaiting completion', 
+      icon: <AccessTime color="warning" />,
+      color: 'linear-gradient(135deg, #e6f0fa 0%, #f0f7fa 100%)'
+    },
+    { 
+      label: 'In Progress', 
+      value: tasks.filter(t => t.status === 'In Progress').length, 
+      description: 'Currently active tasks', 
+      icon: <ErrorOutline color="info" />,
+      color: 'linear-gradient(135deg, #ffe5d9 0%, #fff3e0 100%)'
+    },
+  ];
 
-      {/* Error/Success notifications */}
+  // Enhanced member display
+  const getMemberName = (memberId) => {
+    const member = teamMembers.find(m => m.id === memberId);
+    return member ? member.name : memberId;
+  };
+
+  const getMemberInitials = (memberId) => {
+    const member = teamMembers.find(m => m.id === memberId);
+    if (!member || !member.name) return '?';
+    return member.name.split(' ').map(n => n[0]).join('').toUpperCase();
+  };
+
+  // Enhanced project display
+  const getProjectName = (projectId) => {
+    const project = projects.find(p => p.pid === projectId);
+    return project ? project.title : projectId;
+  };
+
+  return (
+    <Box p={3} sx={{ 
+      bgcolor: '#f9fafb', 
+      minHeight: '100vh',
+      backgroundImage: 'linear-gradient(to bottom, #f5f7fa 0%, #f9fafb 100%)'
+    }}>
+      <Typography variant="h4" mb={3} fontWeight={600} color="text.primary">
+        Task Management
+      </Typography>
+
+      {/* Notifications */}
       <Snackbar open={!!error} autoHideDuration={6000} onClose={handleCloseSnackbar}>
         <Alert onClose={handleCloseSnackbar} severity="error" sx={{ width: '100%' }}>
           {error}
@@ -325,10 +415,12 @@ const Task = () => {
                 color="inherit" 
                 size="small"
                 onClick={handleUndoDelete}
+                sx={{ fontWeight: 600 }}
               >
                 UNDO
               </Button>
             }
+            sx={{ width: '100%' }}
           >
             Task deleted - Undo available for 5 seconds
           </Alert>
@@ -337,284 +429,432 @@ const Task = () => {
 
       {/* Loading indicator */}
       {loading && (
-        <Box sx={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, 
-                  backgroundColor: 'rgba(0,0,0,0.1)', display: 'flex', 
-                  justifyContent: 'center', alignItems: 'center', zIndex: 9999 }}>
-          <Typography variant="h6">Loading...</Typography>
+        <Box sx={{ 
+          position: 'fixed', 
+          top: 0, 
+          left: 0, 
+          right: 0, 
+          bottom: 0, 
+          backgroundColor: 'rgba(255,255,255,0.7)', 
+          display: 'flex', 
+          justifyContent: 'center', 
+          alignItems: 'center', 
+          zIndex: 9999,
+          flexDirection: 'column'
+        }}>
+          <LinearProgress sx={{ width: '300px', height: '6px', borderRadius: '3px' }} />
+          <Typography variant="h6" mt={2} color="text.secondary">Loading...</Typography>
         </Box>
       )}
 
-      <Box display="flex" gap={2} mb={3}>
-        {stats.map((stat, i) => {
-          let bgColor = '#abf7b1';
-          if (stat.label === 'Total Tasks') bgColor = '#e8dde3';
-          else if (stat.label === 'In Progress') bgColor = '#ffe5d9';
-          else if (stat.label === 'Pending Tasks') bgColor = '#e6f0fa';
-          else if (stat.label === 'Completed Tasks') bgColor = '#ddffbd';
-
-
-          return (
-            <Card key={i} variant="outlined" sx={{ flex: 1, bgcolor: bgColor }}>
-              <CardContent>
-                <Box display="flex" justifyContent="space-between" alignItems="center">
-                  <Typography variant="subtitle2">{stat.label}</Typography>
+      {/* Stats Cards */}
+      <Box display="flex" gap={2} mb={3} flexWrap="wrap">
+        {stats.map((stat, i) => (
+          <StyledCard key={i} sx={{ 
+            flex: '1 1 200px', 
+            minWidth: '200px',
+            background: stat.color
+          }}>
+            <CardContent>
+              <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+                <Typography variant="subtitle2" color="text.secondary" fontWeight={500}>
+                  {stat.label}
+                </Typography>
+                <Box sx={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: '50%',
+                  bgcolor: 'rgba(255,255,255,0.3)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
                   {stat.icon}
                 </Box>
-                <Typography variant="h5">{stat.value}</Typography>
-                <Typography variant="caption">{stat.description}</Typography>
-              </CardContent>
-            </Card>
-          );
-        })}
+              </Box>
+              <Typography variant="h4" fontWeight={700} color="text.primary">
+                {stat.value}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                {stat.description}
+              </Typography>
+            </CardContent>
+          </StyledCard>
+        ))}
       </Box>
 
-      <Box display="flex" gap={3} minHeight="800px" alignItems="stretch">
+      <Box display="flex" gap={3} minHeight="800px" alignItems="stretch" flexDirection={{ xs: 'column', lg: 'row' }}>
+        {/* Task List Section */}
         <Box flex={3}>
-          <Card sx={{ height: '105%', bgcolor: '#e6f0fa' }}>
-            <CardContent sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-              <Typography variant="h6" mb={2}><b>My Tasks</b></Typography>
-              <TextField 
-                fullWidth 
-                placeholder="Search tasks..." 
-                value={search} 
-                onChange={e => setSearch(e.target.value)} 
-                margin="dense" 
-                sx={{ bgcolor: 'white', border: '1px solid #aaa', borderRadius: 1 }} 
-              />
+          <StyledCard sx={{ height: '100%' }}>
+            <CardContent sx={{ 
+              display: 'flex', 
+              flexDirection: 'column', 
+              height: '100%',
+              p: 0,
+              '&:last-child': { pb: 0 }
+            }}>
+              <Box p={3} pb={2}>
+                <Typography variant="h6" mb={2} fontWeight={600} color="text.primary">
+                  My Tasks
+                </Typography>
+                
+                <Box display="flex" gap={2} alignItems="center" mb={2}>
+                  <TextField
+                    fullWidth
+                    placeholder="Search tasks..."
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                    margin="dense"
+                    InputProps={{
+                      startAdornment: <Search sx={{ color: 'action.active', mr: 1 }} />
+                    }}
+                    sx={{
+                      bgcolor: 'background.paper',
+                      borderRadius: '8px',
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: '8px'
+                      }
+                    }}
+                  />
+                </Box>
 
-              <Box display="flex" gap={2} mt={2} mb={2}>
-                {/* Status Filter */}
-                <TextField 
-                  select 
-                  label={<b>All Status</b>} 
-                  value={statusFilter} 
-                  onChange={(e) => setStatusFilter(e.target.value)} 
-                  size="small" 
-                  sx={{ flex: 1, bgcolor: 'white', borderRadius: 1, border: '1px solid #aaa' }}
-                >
-                  <MenuItem value="All">All</MenuItem>
-                  <MenuItem value="To Do">To Do</MenuItem>
-                  <MenuItem value="In Progress">In Progress</MenuItem>
-                  <MenuItem value="Done">Done</MenuItem>
-                </TextField>
-                
-                {/* Project Filter - Only show user's projects */}
-                <TextField 
-                  select 
-                  label={<b>My Projects</b>} 
-                  value={projectFilter} 
-                  onChange={(e) => setProjectFilter(e.target.value)} 
-                  size="small" 
-                  sx={{ flex: 1, bgcolor: 'white', borderRadius: 1, border: '1px solid #aaa' }}
-                >
-                  <MenuItem value="All">All</MenuItem>
-                  {projects.map(project => (
-                    <MenuItem key={project.pid} value={project.pid}>
-                      {project.title}
-                    </MenuItem>
-                  ))}
-                </TextField>
-                
-                {/* Team Member Filter */}
-                <TextField 
-                  select 
-                  label={<b>All Team Members</b>} 
-                  value={memberFilter} 
-                  onChange={(e) => setMemberFilter(e.target.value)} 
-                  size="small" 
-                  sx={{ flex: 1, bgcolor: 'white', borderRadius: 1, border: '1px solid #aaa' }}
-                >
-                  <MenuItem value="All">All</MenuItem>
-                  {teamMembers.map(user => (
-                    <MenuItem key={user.id} value={user.id}>
-                      {user.id}
-                    </MenuItem>
-                  ))}
-                </TextField>
+                <Box display="flex" gap={2} mb={2} flexWrap="wrap">
+                  {/* Status Filter */}
+                  <TextField
+                    select
+                    label="Status"
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    size="small"
+                    sx={{ 
+                      minWidth: '120px',
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: '8px'
+                      }
+                    }}
+                  >
+                    <MenuItem value="All">All Status</MenuItem>
+                    <MenuItem value="To Do">To Do</MenuItem>
+                    <MenuItem value="In Progress">In Progress</MenuItem>
+                    <MenuItem value="Done">Done</MenuItem>
+                  </TextField>
+                  
+                  {/* Project Filter */}
+                  <TextField
+                    select
+                    label="Project"
+                    value={projectFilter}
+                    onChange={(e) => setProjectFilter(e.target.value)}
+                    size="small"
+                    sx={{ 
+                      minWidth: '150px',
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: '8px'
+                      }
+                    }}
+                  >
+                    <MenuItem value="All">All Projects</MenuItem>
+                    {projects.map(project => (
+                      <MenuItem key={project.pid} value={project.pid}>
+                        {project.title}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                  
+                  {/* Team Member Filter */}
+                  <TextField
+                    select
+                    label="Team Member"
+                    value={memberFilter}
+                    onChange={(e) => setMemberFilter(e.target.value)}
+                    size="small"
+                    sx={{ 
+                      minWidth: '150px',
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: '8px'
+                      }
+                    }}
+                  >
+                    <MenuItem value="All">All Members</MenuItem>
+                    {teamMembers.map(user => (
+                      <MenuItem key={user.id} value={user.id}>
+                        {user.name}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                </Box>
               </Box>
 
-              <TableContainer component={Paper}>
-                <Table>
-                  <TableHead>
-                    <TableRow sx={{ bgcolor: '#f2f2f2' }}>
-                      <TableCell><b>Title</b></TableCell>
-                      <TableCell><b>Description</b></TableCell>
-                      <TableCell><b>Due Date</b></TableCell>
-                      <TableCell><b>Assigned To</b></TableCell>
-                      <TableCell><b>Project</b></TableCell>
-                      <TableCell><b>Status</b></TableCell>
-                      <TableCell><b>Actions</b></TableCell>
+              <Divider />
+
+              <TableContainer component={Paper} elevation={0} sx={{ flex: 1, borderRadius: 0 }}>
+                <Table sx={{ minWidth: 650 }} aria-label="task table">
+                  <TableHead sx={{ bgcolor: 'background.default' }}>
+                    <TableRow>
+                      <TableCell sx={{ fontWeight: 600 }}>Title</TableCell>
+                      <TableCell sx={{ fontWeight: 600 }}>Description</TableCell>
+                      <TableCell sx={{ fontWeight: 600 }}>Due Date</TableCell>
+                      <TableCell sx={{ fontWeight: 600 }}>Assigned To</TableCell>
+                      <TableCell sx={{ fontWeight: 600 }}>Project</TableCell>
+                      <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
+                      <TableCell sx={{ fontWeight: 600 }}>Actions</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {filteredTasks.map((task, index) => (
-                      <React.Fragment key={task._id}>
-                        <TableRow>
-                          <TableCell>{task.title}</TableCell>
-                          <TableCell>{task.description}</TableCell>
-                          <TableCell>{new Date(task.dueDate).toLocaleDateString()}</TableCell>
-                          <TableCell>{task.assignedTo}</TableCell>
-                          <TableCell>{projectMap[task.project] || task.project}</TableCell>
-                          <TableCell>{task.status}</TableCell>
-                          <TableCell>
-                            <Stack direction="row" spacing={2}>
-                              <IconButton sx={{ color: 'blue' }} onClick={() => handleEdit(index)}>
-                                <Edit />
-                              </IconButton>
-                              <IconButton onClick={() => handleDelete(index)} sx={{ color: 'red' }}>
-                                <Delete />
-                              </IconButton>
-                            </Stack>
-                          </TableCell>
-                        </TableRow>
-                        {editingIndex === index && editTask && (
-                          <TableRow>
-                            <TableCell colSpan={7}>
-                              <Box mt={2} p={2} bgcolor="#fff" border="1px solid #ccc" borderRadius={2}>
-                                <TextField 
-                                  fullWidth 
-                                  label="Title" 
-                                  value={editTask.title} 
-                                  onChange={e => setEditTask({ ...editTask, title: e.target.value })} 
-                                  sx={{ mb: 2 }} 
-                                />
-                                <TextField 
-                                  fullWidth 
-                                  label="Description" 
-                                  value={editTask.description} 
-                                  onChange={e => setEditTask({ ...editTask, description: e.target.value })} 
-                                  sx={{ mb: 2 }} 
-                                  multiline 
-                                  rows={2} 
-                                />
-                                <TextField 
-                                  fullWidth 
-                                  type="date" 
-                                  label="Due Date" 
-                                  value={editTask.dueDate.split('T')[0]} 
-                                  InputLabelProps={{ shrink: true }} 
-                                  onChange={e => setEditTask({ ...editTask, dueDate: e.target.value })} 
-                                  sx={{ mb: 2 }} 
-                                />
-                                <TextField 
-  fullWidth 
-  select 
-  label="Assigned To" 
-  value={editTask.assignedTo} 
-  onChange={e => setEditTask({ ...editTask, assignedTo: e.target.value })} 
-  sx={{ mb: 2 }}
->
-  {teamMembers.map(member => (
-    <MenuItem key={member.id} value={member.id}>
-      {member.name}
-    </MenuItem>
-  ))}
-</TextField>
-                                <TextField 
-                                  fullWidth 
-                                  select 
-                                  label="Project" 
-                                  value={editTask.project} 
-                                  onChange={e => setEditTask({ ...editTask, project: e.target.value })} 
-                                  sx={{ mb: 2 }}
-                                >
-                                  {projects.map(project => (
-                                    <MenuItem key={project.pid} value={project.pid}>
-                                      {project.name}
-                                    </MenuItem>
-                                  ))}
-                                </TextField>
-                                <Chip label={editTask.status} color={
-  editTask.status === 'Done' ? 'success' :
-  editTask.status === 'In Progress' ? 'warning' :
-  'default'
-} sx={{ mb: 2 }} />
-                                <Stack direction="row" spacing={2}>
-                                  <Button variant="contained" color="primary" onClick={handleUpdateTask}>
-                                    Update
-                                  </Button>
-                                  <Button variant="outlined" color="secondary" onClick={handleCancelEdit}>
-                                    Cancel
-                                  </Button>
-                                </Stack>
+                    {filteredTasks.length > 0 ? (
+                      filteredTasks.map((task, index) => (
+                        <React.Fragment key={task._id}>
+                          <TableRow hover sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+                            <TableCell>
+                              <Typography fontWeight={500}>{task.title}</Typography>
+                            </TableCell>
+                            <TableCell>
+                              <Typography variant="body2" color="text.secondary">
+                                {task.description || '-'}
+                              </Typography>
+                            </TableCell>
+                            <TableCell>
+                              <Box display="flex" alignItems="center" gap={1}>
+                                <CalendarToday fontSize="small" color="action" />
+                                <Typography>
+                                  {new Date(task.dueDate).toLocaleDateString()}
+                                </Typography>
                               </Box>
                             </TableCell>
+                            <TableCell>
+                              <Box display="flex" alignItems="center" gap={1}>
+                                <Avatar sx={{ 
+                                  width: 28, 
+                                  height: 28, 
+                                  bgcolor: stringToColor(getMemberName(task.assignedTo)),
+                                  fontSize: '0.75rem'
+                                }}>
+                                  {getMemberInitials(task.assignedTo)}
+                                </Avatar>
+                                <Typography>{getMemberName(task.assignedTo)}</Typography>
+                              </Box>
+                            </TableCell>
+                            <TableCell>
+                              <Box display="flex" alignItems="center" gap={1}>
+                                <Folder fontSize="small" color="action" />
+                                <Typography>{getProjectName(task.project)}</Typography>
+                              </Box>
+                            </TableCell>
+                            <TableCell>
+                              <StatusChip 
+                                label={task.status} 
+                                status={task.status} 
+                                size="small"
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <Stack direction="row" spacing={1}>
+                                <Tooltip title="Edit">
+                                  <IconButton 
+                                    onClick={() => handleEdit(index)}
+                                    sx={{ color: 'primary.main' }}
+                                  >
+                                    <Edit fontSize="small" />
+                                  </IconButton>
+                                </Tooltip>
+                                <Tooltip title="Delete">
+                                  <IconButton 
+                                    onClick={() => handleDelete(index)}
+                                    sx={{ color: 'error.main' }}
+                                  >
+                                    <Delete fontSize="small" />
+                                  </IconButton>
+                                </Tooltip>
+                              </Stack>
+                            </TableCell>
                           </TableRow>
-                        )}
-                      </React.Fragment>
-                    ))}
+                          {editingIndex === index && editTask && (
+                            <TableRow>
+                              <TableCell colSpan={7} sx={{ p: 0 }}>
+                                <Box p={3} bgcolor="background.paper" border="1px solid" borderColor="divider" borderRadius={1}>
+                                  <Typography variant="subtitle1" mb={2} fontWeight={600}>
+                                    Edit Task
+                                  </Typography>
+                                  <Box display="grid" gridTemplateColumns="repeat(auto-fill, minmax(250px, 1fr))" gap={2}>
+                                    <TextField
+                                      fullWidth
+                                      label="Title"
+                                      value={editTask.title}
+                                      onChange={e => setEditTask({ ...editTask, title: e.target.value })}
+                                    />
+                                    <TextField
+                                      fullWidth
+                                      label="Description"
+                                      value={editTask.description}
+                                      onChange={e => setEditTask({ ...editTask, description: e.target.value })}
+                                      multiline
+                                      rows={2}
+                                    />
+                                    <TextField
+                                      fullWidth
+                                      type="date"
+                                      label="Due Date"
+                                      value={editTask.dueDate.split('T')[0]}
+                                      InputLabelProps={{ shrink: true }}
+                                      onChange={e => setEditTask({ ...editTask, dueDate: e.target.value })}
+                                    />
+                                    <TextField
+                                      fullWidth
+                                      select
+                                      label="Assigned To"
+                                      value={editTask.assignedTo}
+                                      onChange={e => setEditTask({ ...editTask, assignedTo: e.target.value })}
+                                    >
+                                      {teamMembers.map(member => (
+                                        <MenuItem key={member.id} value={member.id}>
+                                          {member.name}
+                                        </MenuItem>
+                                      ))}
+                                    </TextField>
+                                    <TextField
+                                      fullWidth
+                                      select
+                                      label="Project"
+                                      value={editTask.project}
+                                      onChange={e => setEditTask({ ...editTask, project: e.target.value })}
+                                    >
+                                      {projects.map(project => (
+                                        <MenuItem key={project.pid} value={project.pid}>
+                                          {project.title}
+                                        </MenuItem>
+                                      ))}
+                                    </TextField>
+                                    <TextField
+                                      fullWidth
+                                      select
+                                      label="Status"
+                                      value={editTask.status}
+                                      onChange={e => setEditTask({ ...editTask, status: e.target.value })}
+                                    >
+                                      <MenuItem value="To Do">To Do</MenuItem>
+                                      <MenuItem value="In Progress">In Progress</MenuItem>
+                                      <MenuItem value="Done">Done</MenuItem>
+                                    </TextField>
+                                  </Box>
+                                  <Stack direction="row" spacing={2} mt={3} justifyContent="flex-end">
+                                    <Button 
+                                      variant="outlined" 
+                                      color="inherit" 
+                                      onClick={handleCancelEdit}
+                                    >
+                                      Cancel
+                                    </Button>
+                                    <Button 
+                                      variant="contained" 
+                                      color="primary" 
+                                      onClick={handleUpdateTask}
+                                    >
+                                      Update Task
+                                    </Button>
+                                  </Stack>
+                                </Box>
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </React.Fragment>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
+                          <Box display="flex" flexDirection="column" alignItems="center">
+                            <TaskIcon sx={{ fontSize: 60, color: 'text.disabled', mb: 1 }} />
+                            <Typography variant="h6" color="text.secondary">
+                              No tasks found
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                              Try adjusting your filters or create a new task
+                            </Typography>
+                          </Box>
+                        </TableCell>
+                      </TableRow>
+                    )}
                   </TableBody>
                 </Table>
               </TableContainer>
             </CardContent>
-          </Card>
+          </StyledCard>
         </Box>
 
-        <Box flex={2}>
-          <Card sx={{ height: '105%', bgcolor: '#e8dde3' }}>
-            <CardContent
-              sx={{
-                display: 'flex',
-                flexDirection: 'column',
-                height: '100%',
-                '& .MuiTextField-root': {
-                  mb: 3,
-                  bgcolor: 'white',
-                  borderRadius: 1,
-                  '& .MuiOutlinedInput-root': {
-                    '& fieldset': {
-                      borderColor: '#888'
-                    }
-                  }
+        {/* Create Task Section */}
+        <Box flex={2} minWidth="300px">
+          <StyledCard sx={{ height: '100%' }}>
+            <CardContent sx={{ 
+              display: 'flex', 
+              flexDirection: 'column', 
+              height: '100%',
+              p: 3,
+              '& .MuiTextField-root': {
+                mb: 2,
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: '8px'
                 }
-              }}
-            >
-              <Typography variant="h6" mb={2}><b>Create New Task</b></Typography>
+              }
+            }}>
+              <Box display="flex" alignItems="center" mb={3}>
+                <AddTask color="primary" sx={{ mr: 1 }} />
+                <Typography variant="h6" fontWeight={600}>
+                  Create New Task
+                </Typography>
+              </Box>
 
-              <TextField 
-                label={<b>Title</b>} 
-                fullWidth 
-                value={newTask.title} 
-                onChange={e => setNewTask({ ...newTask, title: e.target.value })} 
+              <TextField
+                label="Title"
+                fullWidth
+                value={newTask.title}
+                onChange={e => setNewTask({ ...newTask, title: e.target.value })}
+                placeholder="Enter task title"
               />
-              <TextField 
-                label={<b>Description</b>} 
-                fullWidth 
-                multiline 
-                rows={3} 
-                value={newTask.description} 
-                onChange={e => setNewTask({ ...newTask, description: e.target.value })} 
+              <TextField
+                label="Description"
+                fullWidth
+                multiline
+                rows={3}
+                value={newTask.description}
+                onChange={e => setNewTask({ ...newTask, description: e.target.value })}
+                placeholder="Enter task description"
               />
-              <TextField 
-                label={<b>Due Date</b>} 
-                type="date" 
-                fullWidth 
-                InputLabelProps={{ shrink: true }} 
-                value={newTask.dueDate} 
-                onChange={e => setNewTask({ ...newTask, dueDate: e.target.value })} 
+              <TextField
+                label="Due Date"
+                type="date"
+                fullWidth
+                InputLabelProps={{ shrink: true }}
+                value={newTask.dueDate}
+                onChange={e => setNewTask({ ...newTask, dueDate: e.target.value })}
               />
-             
-
-<TextField
-  select
-  label="Assign To"
-  value={newTask.assignedTo}
-  onChange={e => setNewTask({ ...newTask, assignedTo: e.target.value })}
-  fullWidth
-  margin="dense"
->
-  {teamMembers.map(member => (
-    <MenuItem key={member.id} value={member.id}>
-      {member.name}
-    </MenuItem>
-  ))}
-</TextField>
-
-              <TextField 
-                select 
-                label={<b>Project</b>} 
-                fullWidth 
-                value={newTask.project} 
+              <TextField
+                select
+                label="Assign To"
+                value={newTask.assignedTo}
+                onChange={e => setNewTask({ ...newTask, assignedTo: e.target.value })}
+                fullWidth
+              >
+                {teamMembers.map(member => (
+                  <MenuItem key={member.id} value={member.id}>
+                    <Box display="flex" alignItems="center" gap={1}>
+                      <Avatar sx={{ 
+                        width: 24, 
+                        height: 24, 
+                        bgcolor: stringToColor(member.name),
+                        fontSize: '0.7rem'
+                      }}>
+                        {member.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                      </Avatar>
+                      {member.name}
+                    </Box>
+                  </MenuItem>
+                ))}
+              </TextField>
+              <TextField
+                select
+                label="Project"
+                fullWidth
+                value={newTask.project}
                 onChange={e => setNewTask({ ...newTask, project: e.target.value })}
               >
                 {projects.map(project => (
@@ -628,19 +868,29 @@ const Task = () => {
                 <Button
                   variant="contained"
                   fullWidth
+                  size="large"
                   onClick={handleCreateTask}
                   disabled={loading}
-                  sx={{ backgroundColor: '#4f46e5', color: '#fff', '&:hover': { backgroundColor: '#3f3de6' } }}
+                  startIcon={<AddTask />}
+                  sx={{
+                    bgcolor: 'primary.main',
+                    color: 'white',
+                    borderRadius: '8px',
+                    py: 1.5,
+                    '&:hover': {
+                      bgcolor: 'primary.dark'
+                    }
+                  }}
                 >
                   {loading ? 'Creating...' : 'Create Task'}
                 </Button>
               </Box>
             </CardContent>
-          </Card>
+          </StyledCard>
         </Box>
       </Box>
-       </Box>
+    </Box>
   );
 };
 
-export default Task;
+export default TaskManagement;
