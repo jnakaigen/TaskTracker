@@ -17,7 +17,15 @@ export default function MyTasks() {
   const [tasks, setTasks] = useState([]);
   const [commentInputs, setCommentInputs] = useState({});
   const [animateChart, setAnimateChart] = useState(false);
-  
+  const [projects, setProjects] = useState([]);
+
+
+useEffect(() => {
+  fetch('http://localhost:4000/api/projects')
+    .then(res => res.json())
+    .then(data => setProjects(Array.isArray(data) ? data : []))
+    .catch(() => setProjects([]));
+}, []);
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem('currentUser'));
     if (!user) return;
@@ -53,18 +61,34 @@ export default function MyTasks() {
     setCommentInputs(prev => ({ ...prev, [_id]: newComment }));
   };
 
-  const handleSaveComment = (_id) => {
-    if (!commentInputs[_id]) return;
-    setTasks(prev => prev.map(t =>
-      t._id === _id
-        ? { ...t, comments: [...t.comments, commentInputs[_id]] }
-        : t
-    ));
+ const handleSaveComment = async (_id) => {
+  if (!commentInputs[_id]) return;
+  try {
+    const res = await fetch(`http://localhost:4000/api/tasks/${_id}/comments`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ comment: commentInputs[_id] }),
+    });
+    if (!res.ok) throw new Error('Failed to save comment');
+    const updatedTask = await res.json();
+    setTasks(prev =>
+      prev.map(t => t._id === _id ? updatedTask : t)
+    );
     setCommentInputs(prev => ({ ...prev, [_id]: '' }));
-  };
-
+  } catch (err) {
+    console.error('Failed to save comment', err);
+  }
+};
+  const getProjectName = (projectId) => {
+  const project = projects.find(
+    p => p.pid === projectId || p._id === projectId || String(p.pid) === String(projectId) || String(p._id) === String(projectId)
+  );
+  return project ? project.title : projectId;
+};
   const grouped = tasks.reduce((acc, task) => {
-    (acc[task.project] = acc[task.project] || []).push(task);
+    const projectName = getProjectName(task.project);
+    if (!acc[projectName]) acc[projectName] = [];
+    acc[projectName].push(task);
     return acc;
   }, {});
 
@@ -85,6 +109,7 @@ export default function MyTasks() {
 const [toDoDeg, inProgDeg, doneDeg] = chartData.map(d =>
   totalTasks ? (d.count / totalTasks) * 360 : 0
 );
+
   return (
     <Box p={3} sx={{ background: 'linear-gradient(to right, #f5f7fa, #e8ecf3)', minHeight: '100vh' }}>
       <Typography variant="h4" fontWeight={700} mb={4} textAlign="center" color="primary.dark">Task Dashboard</Typography>
@@ -127,12 +152,14 @@ const [toDoDeg, inProgDeg, doneDeg] = chartData.map(d =>
 
       <Grid container spacing={4} justifyContent="center">
         <Grid item xs={12} md={8}>
-          {Object.keys(grouped).map(project => (
-            <Box key={project} mb={5}>
-              <Typography variant="h6" color="primary.main" gutterBottom sx={{ fontWeight: 600 }}>{project.toUpperCase()}</Typography>
+          {Object.keys(grouped).map(projectName => (
+            <Box key={projectName} mb={5}>
+             <Typography variant="h6" color="primary.main" gutterBottom sx={{ fontWeight: 600 }}>
+  {projectName.toUpperCase()}
+</Typography>
               <Divider sx={{ mb: 3 }} />
               <Grid container spacing={3}>
-                {grouped[project].map(task => (
+                {grouped[projectName].map(task => (
                   <Grid item xs={12} sm={6} md={4} key={task._id}>
                     <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', borderRadius: 3, background: '#ffffff', boxShadow: '0 6px 20px rgba(0,0,0,0.06)' }}>
                       <CardContent>
@@ -159,7 +186,7 @@ const [toDoDeg, inProgDeg, doneDeg] = chartData.map(d =>
                           <SaveIcon />
                         </IconButton>
                         <Divider sx={{ my: 1 }} />
-                        {(task.comments || []).map((c, i) => (
+                        {(Array.isArray(task.comments) ? task.comments : []).map((c, i) => (
                           <Typography key={i} variant="body2" color="text.secondary">• {c}</Typography>
                         ))}
                       </CardContent>

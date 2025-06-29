@@ -11,7 +11,7 @@ import {
 } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
 
-// Custom styled components
+
 const StyledCard = styled(Card)(({ theme }) => ({
   borderRadius: '12px',
   boxShadow: '0 4px 20px 0 rgba(0,0,0,0.12)',
@@ -59,7 +59,6 @@ function stringToColor(string) {
 }
 
 const TaskManagement = () => {
-  // State variables
   const [tasks, setTasks] = useState([]);
   const [allTasks, setAllTasks] = useState([]);
   const [projects, setProjects] = useState([]);
@@ -725,17 +724,7 @@ const TaskManagement = () => {
                                         </MenuItem>
                                       ))}
                                     </TextField>
-                                    <TextField
-                                      fullWidth
-                                      select
-                                      label="Status"
-                                      value={editTask.status}
-                                      onChange={e => setEditTask({ ...editTask, status: e.target.value })}
-                                    >
-                                      <MenuItem value="To Do">To Do</MenuItem>
-                                      <MenuItem value="In Progress">In Progress</MenuItem>
-                                      <MenuItem value="Done">Done</MenuItem>
-                                    </TextField>
+                                    
                                   </Box>
                                   <Stack direction="row" spacing={2} mt={3} justifyContent="flex-end">
                                     <Button 

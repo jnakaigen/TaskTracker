@@ -3,7 +3,7 @@ const router = express.Router();
 //2nd step
 const Task = require('../models/taskModel');
 //3rd step=>importing taskController
-const{createTask,getTasks,getTask,deleteTask,updateTask,updateTaskStatus}=require('../controllers/taskController')
+const{createTask,getTasks,getTask,deleteTask,updateTask,updateTaskStatus,addTaskComment}=require('../controllers/taskController')
 
 //GET all tasks
 router.get('/',getTasks)
@@ -30,4 +30,5 @@ router.delete('/:id',deleteTask)
 router.put('/:id',updateTask)
 router.patch('/:id',updateTask)
 router.patch('/:id/status',updateTaskStatus)
+router.post('/:id/comments',addTaskComment)
 module.exports = router;

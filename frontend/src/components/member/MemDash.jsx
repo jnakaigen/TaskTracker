@@ -51,7 +51,9 @@ const float = keyframes`
 
 const MemDash = () => {
   const [tasks, setTasks] = useState([]);
-  const [loading, setLoading] = useState(true);  
+  const [loading, setLoading] = useState(true); 
+  const [currentUser, setCurrentUser] = useState(null);
+  const [currentDate, setCurrentDate] = useState(''); 
   
   // Calculate progress
   const completedTasks = tasks.filter(task => task.status === 'Done').length;
@@ -61,6 +63,16 @@ const MemDash = () => {
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem('currentUser'));
     if (!user) return;
+    setCurrentUser(user);
+    const today = new Date();
+  const formatted = today.toLocaleDateString('en-IN', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+  setCurrentDate(formatted);
+
     fetch(`http://localhost:4000/api/tasks?assignedTo=${user.id}`)
       .then(res => res.json())
       .then(data => setTasks(data))
@@ -141,16 +153,24 @@ const MemDash = () => {
       minHeight: '100vh'
     }}>
       <Slide direction="down" in={true} timeout={500}>
+        <Box>
         <Typography variant="h4" gutterBottom fontWeight="bold" sx={{ 
-          mb: 4,
           textAlign: 'center',
           background: 'linear-gradient(to right, #3f51b5, #2196f3)',
           WebkitBackgroundClip: 'text',
           WebkitTextFillColor: 'transparent',
           textShadow: '0 2px 4px rgba(0,0,0,0.1)'
         }}>
-          My Dashboard
+          {currentUser.role === 'Member' 
+              ? `Welcome  ${currentUser.name}`
+              : `Welcome ${currentUser.name}`}
         </Typography>
+        <Typography variant="subtitle1" align="center"
+         color="text.secondary"
+         sx={{mb: 3}}>
+      {currentDate}
+    </Typography>
+        </Box>
       </Slide>
       
       {/* Progress Overview */}
@@ -209,7 +229,9 @@ const MemDash = () => {
             </Grid>
             <Grid item xs={12} md={6}>
               <Box sx={{ 
-                height: 200,
+                height: 300,
+                width: '100%',
+                position: 'relative',
                 animation: `${float} 6s ease-in-out infinite`,
                 '&:hover': {
                   animation: `${pulse} 1s ease-in-out infinite`
