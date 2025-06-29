@@ -19,13 +19,9 @@ import {
 import MenuIcon from '@mui/icons-material/Menu';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import LayersIcon from '@mui/icons-material/Layers';
-import GroupIcon from '@mui/icons-material/Group';
-import WorkIcon from '@mui/icons-material/Work';
-import { NavLink } from 'react-router-dom';
-import { useNavigate } from 'react-router-dom';
+import { NavLink, useNavigate, Outlet } from 'react-router-dom';
 import Button from '@mui/material/Button';
 import LogoutIcon from '@mui/icons-material/Logout';
-import {Outlet} from 'react-router-dom';
 
 const drawerWidth = 260;
 
@@ -65,19 +61,27 @@ const MemDashLayout = ({ children }) => {
       background: 'linear-gradient(180deg, #ffffff 0%, #f8faff 100%)',
       borderRight: '1px solid rgba(0, 0, 0, 0.08)'
     }}>
+      {/* Sidebar Header with same text as AdmDashLayout */}
       <Toolbar sx={{ 
         minHeight: '80px !important',
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'center'
+        justifyContent: 'center',
+        background: 'linear-gradient(90deg, #1976d2 0%, #5e35b1 100%)',
+        backgroundSize: '200% 200%',
+        animation: 'gradient 8s ease infinite',
+        '@keyframes gradient': {
+          '0%': { backgroundPosition: '0% 50%' },
+          '50%': { backgroundPosition: '100% 50%' },
+          '100%': { backgroundPosition: '0% 50%' }
+        }
       }}>
         <Typography variant="h6" noWrap sx={{ 
-          fontWeight: 700,
-          background: 'linear-gradient(90deg, #1976d2 0%, #5e35b1 100%)',
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent'
+          fontWeight: 800,
+          color: 'white',
+          letterSpacing: '1px'
         }}>
-          MemberPanel
+          MEMBER PANEL
         </Typography>
       </Toolbar>
       <Divider sx={{ borderColor: 'rgba(0, 0, 0, 0.05)' }} />
@@ -108,19 +112,21 @@ const MemDashLayout = ({ children }) => {
       </Box>
     </Box>
   );
-    const navigate=useNavigate();
-    const handleLogout = () => {
-      navigate('/login');
-    };
+
+  const navigate = useNavigate();
+  const handleLogout = () => {
+    navigate('/login');
+  };
+
   return (
     <Box sx={{ 
       display: 'flex', 
       minHeight: '100vh', 
-      backgroundColor: '#f9fafc'
+      backgroundColor: '#f9fafc',
+      backgroundImage: 'radial-gradient(at 40% 20%, hsla(240,100%,94%,0.3) 0px, transparent 50%), radial-gradient(at 80% 0%, hsla(189,100%,56%,0.1) 0px, transparent 50%), radial-gradient(at 0% 50%, hsla(355,100%,93%,0.1) 0px, transparent 50%)'
     }}>
       <CssBaseline />
-      
-      {/* AppBar */}
+
       <AppBar
         position="fixed"
         sx={{
@@ -142,30 +148,29 @@ const MemDashLayout = ({ children }) => {
           >
             <MenuIcon />
           </IconButton>
-          <Typography variant="h6" fontWeight={600} sx={{ flexGrow: 1 }}>
+          {/* Same font style as AdmDashLayout */}
+          <Typography variant="h6" fontWeight={700} sx={{ flexGrow: 1, letterSpacing: '0.5px' }}>
             Dashboard Overview
           </Typography>
           <Button
-                    variant="outlined"
-                    startIcon={<LogoutIcon />}
-                    onClick={handleLogout}
-                    sx={{
-                      ml: 2,
-                      textTransform: 'none',
-                      borderRadius: 2
-                    }}
-                  >
-                    Logout
-                  </Button>
+            variant="outlined"
+            startIcon={<LogoutIcon />}
+            onClick={handleLogout}
+            sx={{
+              ml: 2,
+              textTransform: 'none',
+              borderRadius: 2
+            }}
+          >
+            Logout
+          </Button>
         </Toolbar>
       </AppBar>
 
-      {/* Drawer */}
       <Box
         component="nav"
         sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}
       >
-        {/* Mobile Drawer */}
         <Drawer
           variant="temporary"
           open={mobileOpen}
@@ -181,8 +186,6 @@ const MemDashLayout = ({ children }) => {
         >
           {drawer}
         </Drawer>
-        
-        {/* Desktop Drawer */}
         <Drawer
           variant="permanent"
           sx={{
@@ -199,7 +202,6 @@ const MemDashLayout = ({ children }) => {
         </Drawer>
       </Box>
 
-      {/* Main Content */}
       <Box
         component="main"
         sx={{
@@ -216,7 +218,7 @@ const MemDashLayout = ({ children }) => {
           minHeight: 'calc(100vh - 120px)',
           position: 'relative'
         }}>
-          {<Outlet />}
+          <Outlet />
         </Box>
       </Box>
     </Box>
