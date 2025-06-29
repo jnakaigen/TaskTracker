@@ -6,11 +6,14 @@ const mongoose = require('mongoose');
 // GET all projects FOR A SPECIFIC USER
 const getProjects = async (req, res) => {
     try {
-        const { id } = req.query; // Get user ID from query params
-        if (!id) return res.status(400).json({ message: 'User ID required' });
-        
-        const projects = await Project.find({ id }).sort({ dueDate: 1 });
-        res.status(200).json(projects);
+        const { id } = req.query;
+        if (id) {
+            const projects = await Project.find({ id }).sort({ dueDate: 1 });
+            return res.status(200).json(projects);
+        }
+        // If no id, return all projects
+        const projects = await Project.find().sort({ dueDate: 1 });
+        return res.status(200).json(projects);
     } catch (e) {
         res.status(500).json({ error: e.message });
     }
