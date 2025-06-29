@@ -25,7 +25,7 @@ const Project = () => {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [currentUserId, setCurrentUserId] = useState("");
-  
+
   // Add/Edit dialog state
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);

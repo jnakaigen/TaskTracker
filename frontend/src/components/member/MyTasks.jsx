@@ -164,7 +164,7 @@ const [toDoDeg, inProgDeg, doneDeg] = chartData.map(d =>
                             <MenuItem value="Done">Done</MenuItem>
                           </Select>
                         </FormControl>
-                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>Due: {task.dueDate}</Typography>
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>Due: {new Date(task.dueDate).toLocaleDateString("en-GB")}</Typography>
                         <TextField
                           size="small"
                           fullWidth
