@@ -136,31 +136,6 @@ const AdmDashLayout = ({ children }) => {
           </MotionListItem>
         ))}
       </List>
-      <Box sx={{ p: 2, pt: 0 }}>
-        <Divider sx={{ borderColor: 'rgba(0, 0, 0, 0.05)', mb: 2 }} />
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Typography variant="caption" color="text.secondary">
-            v1.0.0
-          </Typography>
-          <MotionButton
-            size="small"
-            variant="outlined"
-            startIcon={<LogoutIcon sx={{ fontSize: '1rem' }} />}
-            onClick={handleLogout}
-            sx={{
-              textTransform: 'none',
-              borderRadius: 2,
-              fontSize: '0.7rem',
-              px: 1.5,
-              py: 0.5
-            }}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            Logout
-          </MotionButton>
-        </Box>
-      </Box>
     </Box>
   );
 
