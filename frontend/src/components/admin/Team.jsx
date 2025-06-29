@@ -132,7 +132,7 @@ return (
         <Box>
           <Typography variant="h4" fontWeight={700} color="primary">Team Members</Typography>
           <Typography variant="body1" color="text.secondary">
-            {teamMembers.length} Members: 1 Admin, {teamMembers.length - 1} Team Members
+            {teamMembers.length} Members
           </Typography>
         </Box>
         <Button
