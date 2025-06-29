@@ -279,22 +279,7 @@ const fetchProjects = async () => {
       </Snackbar>
 
       <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2, mt: 2 ,paddingTop: 6}}>
-        <h2 style={{ margin: 0, marginLeft: 5, fontSize: "2rem" }}>All Projects</h2>
         <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
-          <Button
-            variant="contained"
-            sx={{
-              background: "linear-gradient(90deg, #1e3a8a, #3b82f6)",
-              color: "#fff",
-              fontWeight: 600,
-              borderRadius: "8px",
-              boxShadow: "none",
-              "&:hover": { background: "#2563eb" },
-            }}
-            onClick={handleAddClick}
-          >
-            Add Project
-          </Button>
           <TextField
             label="Filter Projects..."
             variant="outlined"
@@ -325,7 +310,22 @@ const fetchProjects = async () => {
             </Select>
           </FormControl>
         </Box>
+        <Button
+            variant="contained"
+            sx={{
+              background: "linear-gradient(90deg, #1e3a8a, #3b82f6)",
+              color: "#fff",
+              fontWeight: 600,
+              borderRadius: "8px",
+              boxShadow: "none",
+              "&:hover": { background: "#2563eb" },
+            }}
+            onClick={handleAddClick}
+          >
+            + Add Project
+          </Button>
       </Box>
+      
 
       <TableContainer component={Paper}>
         <Table sx={{ minWidth: 600 }} aria-label="simple table">
