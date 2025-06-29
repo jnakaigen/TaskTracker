@@ -105,7 +105,7 @@ const deleteAllUsers = async (req, res) => {
         // if (!req.user.isAdmin) return res.status(403).json({ error: 'Unauthorized' });
         
         await User.deleteMany({});
-        res.status(204).end(); // 204 No Content is standard for successful deletions
+        res.status(204).end(); 
     } catch (error) {
         res.status(500).json({ error: 'Server error' });
     }

@@ -297,7 +297,8 @@ const AdmDash = () => {
                     </Box>
                     <Box sx={{ mt: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <Typography variant="caption" color="text.secondary">
-                        {proj.startDate} - {proj.endDate}
+                          {new Date(proj.startDate).toLocaleDateString('en-GB')}
+                        
                       </Typography>
                       <Box sx={{
                         width: '60%',
@@ -504,7 +505,7 @@ const AdmDash = () => {
                         <Typography variant="body2">{getMemberName(task.assignedTo)}</Typography>
                       </Box>
                       <Typography variant="caption" color="text.secondary">
-                        Due: {task.dueDate}
+                        Due: {new Date(task.dueDate).toLocaleDateString("en-GB")}
                       </Typography>
                     </Box>
                     

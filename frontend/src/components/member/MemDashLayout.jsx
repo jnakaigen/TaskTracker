@@ -148,7 +148,6 @@ const MemDashLayout = ({ children }) => {
           >
             <MenuIcon />
           </IconButton>
-          {/* Same font style as AdmDashLayout */}
           <Typography variant="h6" fontWeight={700} sx={{ flexGrow: 1, letterSpacing: '0.5px' }}>
             Dashboard Overview
           </Typography>
