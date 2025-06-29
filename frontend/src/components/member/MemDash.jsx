@@ -229,7 +229,9 @@ const MemDash = () => {
             </Grid>
             <Grid item xs={12} md={6}>
               <Box sx={{ 
-                height: 200,
+                height: 300,
+                width: '100%',
+                position: 'relative',
                 animation: `${float} 6s ease-in-out infinite`,
                 '&:hover': {
                   animation: `${pulse} 1s ease-in-out infinite`

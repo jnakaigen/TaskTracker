@@ -61,15 +61,24 @@ useEffect(() => {
     setCommentInputs(prev => ({ ...prev, [_id]: newComment }));
   };
 
-  const handleSaveComment = (_id) => {
-    if (!commentInputs[_id]) return;
-    setTasks(prev => prev.map(t =>
-      t._id === _id
-        ? { ...t, comments: [...t.comments, commentInputs[_id]] }
-        : t
-    ));
+ const handleSaveComment = async (_id) => {
+  if (!commentInputs[_id]) return;
+  try {
+    const res = await fetch(`http://localhost:4000/api/tasks/${_id}/comments`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ comment: commentInputs[_id] }),
+    });
+    if (!res.ok) throw new Error('Failed to save comment');
+    const updatedTask = await res.json();
+    setTasks(prev =>
+      prev.map(t => t._id === _id ? updatedTask : t)
+    );
     setCommentInputs(prev => ({ ...prev, [_id]: '' }));
-  };
+  } catch (err) {
+    console.error('Failed to save comment', err);
+  }
+};
   const getProjectName = (projectId) => {
   const project = projects.find(
     p => p.pid === projectId || p._id === projectId || String(p.pid) === String(projectId) || String(p._id) === String(projectId)

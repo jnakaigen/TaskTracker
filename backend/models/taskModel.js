@@ -43,6 +43,10 @@ const taskSchema = new Schema({
         },
         default: 'To Do' // Default value
     },
+     comments: {
+        type: [String],
+        default: []
+    }
 
 }, { 
     timestamps: true,
