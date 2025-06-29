@@ -177,7 +177,7 @@ const [toDoDeg, inProgDeg, doneDeg] = chartData.map(d =>
                           <SaveIcon />
                         </IconButton>
                         <Divider sx={{ my: 1 }} />
-                        {(task.comments || []).map((c, i) => (
+                        {(Array.isArray(task.comments) ? task.comments : []).map((c, i) => (
                           <Typography key={i} variant="body2" color="text.secondary">• {c}</Typography>
                         ))}
                       </CardContent>

@@ -725,17 +725,7 @@ const TaskManagement = () => {
                                         </MenuItem>
                                       ))}
                                     </TextField>
-                                    <TextField
-                                      fullWidth
-                                      select
-                                      label="Status"
-                                      value={editTask.status}
-                                      onChange={e => setEditTask({ ...editTask, status: e.target.value })}
-                                    >
-                                      <MenuItem value="To Do">To Do</MenuItem>
-                                      <MenuItem value="In Progress">In Progress</MenuItem>
-                                      <MenuItem value="Done">Done</MenuItem>
-                                    </TextField>
+                                    
                                   </Box>
                                   <Stack direction="row" spacing={2} mt={3} justifyContent="flex-end">
                                     <Button 
