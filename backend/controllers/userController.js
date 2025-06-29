@@ -35,19 +35,16 @@ const getUser = async (req, res) => {
 
 // Create new user
 const createUser = async (req, res) => {
-    const { id, name,email,role } = req.body;
-    
-    if (!id ||!name ||!email || !role ) {
-        return res.status(400).json({ error: 'All fields (id, role, name) are required' });
+    const { id, name, email, role } = req.body;
+    if (!id || !name || !email || !role) {
+        return res.status(400).json({ error: 'All fields (id, role, name, email) are required' });
     }
-
     try {
         const existingUser = await User.findOne({ id });
         if (existingUser) {
             return res.status(409).json({ error: 'User ID already exists' });
         }
-
-        const user = await User.create({ id, role, name });
+        const user = await User.create({ id, role, name, email }); // <-- add email here
         res.status(201).json(user);
     } catch (error) {
         if (error.name === 'ValidationError') {
@@ -73,16 +70,15 @@ const loginUser = async (req, res) => {
     }
 
     res.status(200).json({
-      message: 'Login successful',
-      redirectUrl: user.role === 'Admin' ? '/admdash' : '/memdash',
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        
-      }
-    });
+  message: 'Login successful',
+  redirectUrl: user.role && user.role.toLowerCase() === 'admin' ? '/admdash' : '/memdash',
+  user: {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+  }
+});
   } catch (error) {
     res.status(500).json({ error: 'Server error' });
   }
