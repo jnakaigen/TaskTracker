@@ -1,0 +1,84 @@
+[
+  {
+    "id": "t1",
+    "title": "Design Landing Page",
+    "description": "Create a modern design for the new homepage.",
+    "dueDate": "2025-06-20",
+    "project": "proj1",
+    "status": "In Progress",
+    "comments": ["Mockups done. Need feedback from Alice."]
+  },
+  {
+    "id": "t2",
+    "title": "Setup Hosting",
+    "description": "Set up the website on the new hosting platform.",
+    "dueDate": "2025-06-22",
+    "project": "proj1",
+    "status": "To Do",
+    "comments": []
+  },
+  {
+    "id": "t3",
+    "title": "Implement Mobile Navigation",
+    "description": "Ensure responsive navigation for mobile users.",
+    "dueDate": "2025-06-25",
+    "project": "proj1",
+    "status": "Done",
+    "comments": []
+  },
+  {
+    "id": "t4",
+    "title": "Develop Login Flow",
+    "description": "Create login and registration flow in the mobile app.",
+    "dueDate": "2025-07-01",
+    "project": "proj2",
+    "status": "In Progress",
+    "comments": []
+  },
+  {
+    "id": "t5",
+    "title": "Push Notifications Setup",
+    "description": "Configure FCM and push notification handling.",
+    "dueDate": "2025-07-10",
+    "project": "proj2",
+    "status": "To Do",
+    "comments": []
+  },
+  {
+    "id": "t6",
+    "title": "Build Task Tracker UI",
+    "description": "Frontend screens for managing tasks in app.",
+    "dueDate": "2025-07-05",
+    "project": "proj2",
+    "status": "To Do",
+    "comments": []
+  },
+  {
+    "id": "t7",
+    "title": "Write Social Media Captions",
+    "description": "Craft engaging captions for campaign posts.",
+    "dueDate": "2025-06-10",
+    "project": "proj3",
+    "status": "Done",
+    "comments": []
+  },
+  {
+    "id": "t8",
+    "title": "Schedule Posts",
+    "description": "Use Buffer to schedule all posts across platforms.",
+    "dueDate": "2025-06-12",
+    "project": "proj3",
+    "status":"In Progress",
+    "comments": []
+  },
+  {
+    "id": "t9",
+    "title": "Design Campaign Graphics",
+    "description": "Create Instagram and Twitter ad creatives.",
+    "dueDate": "2025-06-15",
+    "project": "proj3",
+    "status": "To Do",
+    "comments": []
+  }
+  
+]
