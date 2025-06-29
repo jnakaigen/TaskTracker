@@ -35,16 +35,16 @@ const getUser = async (req, res) => {
 
 // Create new user
 const createUser = async (req, res) => {
-    const { id, name, email, role } = req.body;
-    if (!id || !name || !email || !role) {
-        return res.status(400).json({ error: 'All fields (id, role, name, email) are required' });
+    const { id, name, email, role, project_role } = req.body;
+    if (!id || !name || !email || !role || (role === 'Member' && !project_role)) {
+        return res.status(400).json({ error: 'All fields (id, role, name, email, project_role) are required for members' });
     }
     try {
         const existingUser = await User.findOne({ id });
         if (existingUser) {
             return res.status(409).json({ error: 'User ID already exists' });
         }
-        const user = await User.create({ id, role, name, email }); // <-- add email here
+        const user = await User.create({ id, role, name, email, project_role });
         res.status(201).json(user);
     } catch (error) {
         if (error.name === 'ValidationError') {
@@ -77,6 +77,7 @@ const loginUser = async (req, res) => {
     name: user.name,
     email: user.email,
     role: user.role,
+    project_role: user.project_role 
   }
 });
   } catch (error) {

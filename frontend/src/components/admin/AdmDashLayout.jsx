@@ -208,31 +208,6 @@ const AdmDashLayout = ({ children }) => {
             Dashboard Overview
           </Typography>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Badge 
-              badgeContent={4} 
-              color="error"
-              overlap="circular"
-              sx={{
-                '& .MuiBadge-badge': {
-                  boxShadow: `0 0 0 2px ${theme.palette.background.paper}`,
-                }
-              }}
-            >
-              <Avatar 
-                sx={{ 
-                  width: 40, 
-                  height: 40,
-                  bgcolor: 'primary.main',
-                  cursor: 'pointer',
-                  transition: 'all 0.3s ease',
-                  '&:hover': {
-                    transform: 'scale(1.1)'
-                  }
-                }}
-              >
-                A
-              </Avatar>
-            </Badge>
             <MotionButton
               variant="outlined"
               startIcon={<LogoutIcon />}

@@ -22,6 +22,11 @@ const userSchema = new mongoose.Schema({
     type: String, 
     required: true,
     enum: ['Admin', 'Member']
+  },
+   project_role: { // <-- Add this field
+    type: String,
+    required: function() { return this.role === 'Member'; }, // required for members
+    trim: true
   }
 }, { 
   timestamps: true,

@@ -20,7 +20,7 @@ export default function TeamDashboard() {
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [selectedMember, setSelectedMember] = useState(null);
   const [newMember, setNewMember] = useState({
-    id: '', name: '', email: '', role: '', img: '/avatar-placeholder.png'
+    id: '', name: '', email: '', project_role: '', img: '/avatar-placeholder.png'
   });
   const [success, setSuccess] = useState(null);
   const [error, setError] = useState(null);
@@ -52,7 +52,7 @@ export default function TeamDashboard() {
         const added = await response.json();
         setTeamMembers(prev => [...prev, added]);
         setAddDialogOpen(false);
-        setNewMember({ id: '', name: '', email: '', role: '', img: '/avatar-placeholder.png' });
+        setNewMember({ id: '', name: '', email: '', project_role: '', img: '/avatar-placeholder.png' });
         setSuccess('Member created successfully');
       }
     } catch (err) {
@@ -159,7 +159,7 @@ return (
               <TableCell><strong>ID</strong></TableCell>
               <TableCell><strong>Name</strong></TableCell>
               <TableCell><strong>Email</strong></TableCell>
-              <TableCell><strong>Role</strong></TableCell>
+              <TableCell><strong>Project_Role</strong></TableCell>
               <TableCell align="center"><strong>Actions</strong></TableCell>
             </TableRow>
           </TableHead>
@@ -177,7 +177,7 @@ return (
                   </Stack>
                 </TableCell>
                 <TableCell>{member.email}</TableCell>
-                <TableCell>{member.role}</TableCell>
+                <TableCell>{member.project_role}</TableCell>
                 <TableCell align="center">
                   <Stack direction="row" justifyContent="center" spacing={1}>
                     <Button size="small" variant="contained" startIcon={<EditIcon />} color="primary" onClick={() => openEditDialog(member)}>
@@ -206,8 +206,8 @@ return (
             value={selectedMember?.email || ''}
             onChange={(e) => setSelectedMember({ ...selectedMember, email: e.target.value })} />
           <TextField label="Role" variant="outlined" fullWidth margin="dense"
-            value={selectedMember?.role || ''}
-            onChange={(e) => setSelectedMember({ ...selectedMember, role: e.target.value })} />
+            value={selectedMember?.project_role || ''}
+            onChange={(e) => setSelectedMember({ ...selectedMember, project_role: e.target.value })} />
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setEditDialogOpen(false)}>Cancel</Button>
@@ -229,9 +229,14 @@ return (
           <TextField label="Email" variant="outlined" fullWidth margin="dense"
             value={newMember.email}
             onChange={(e) => setNewMember({ ...newMember, email: e.target.value })} />
-          <TextField label="Role" variant="outlined" fullWidth margin="dense"
-            value={newMember.role}
-            onChange={(e) => setNewMember({ ...newMember, role: e.target.value })} />
+         <TextField
+  label="Project Role"
+  variant="outlined"
+  fullWidth
+  margin="dense"
+  value={newMember.project_role}
+  onChange={e => setNewMember({ ...newMember, project_role: e.target.value })}
+/>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setAddDialogOpen(false)}>Cancel</Button>

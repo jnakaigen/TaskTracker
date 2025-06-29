@@ -27,15 +27,15 @@ const getTeam = async (req, res) => {
 
 // Create a new team
 const createTeam = async (req, res) => {
-    const { id, name, email, role, adminId } = req.body;
+    const { id, name, email, project_role, adminId } = req.body;
     try {
-        // Create in Team collection
-        const team = await Team.create({ id, name, email, role, adminId });
+        // Always set role to 'Member'
+        const team = await Team.create({ id, name, email, role: 'Member', project_role, adminId });
 
         // Also add to User collection if not exists
         let user = await User.findOne({ id });
         if (!user) {
-            user = await User.create({ id, name, email, role });
+            user = await User.create({ id, name, email, role: 'Member', project_role });
         }
 
         res.status(200).json(team);
@@ -66,11 +66,12 @@ const deleteTeam = async (req, res) => {
 // Update a team
 const updateTeam = async (req, res) => {
     const { id } = req.params;
+    const { name, email, project_role, adminId } = req.body;
     try {
-        // Update in Team collection
+        // Always set role to 'Member'
         const team = await Team.findOneAndUpdate(
             { id: id },
-            { ...req.body },
+            { name, email, role: 'Member', project_role, adminId },
             { new: true }
         );
         if (!team) return res.status(404).json({ message: 'Team not found' });
@@ -78,7 +79,7 @@ const updateTeam = async (req, res) => {
         // Also update in User collection
         await User.findOneAndUpdate(
             { id: id },
-            { ...req.body }
+            { name, email, role: 'Member', project_role }
         );
 
         res.status(200).json(team);
