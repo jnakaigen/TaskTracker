@@ -19,14 +19,12 @@ function toInputDate(dateString) {
 }
 
 const Project = () => {
-  // State
+  // State variables
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [currentUserId, setCurrentUserId] = useState("");
-
-  // Add/Edit dialog state
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editRow, setEditRow] = useState(null);
@@ -401,7 +399,6 @@ const fetchProjects = async () => {
         </DialogActions>
       </Dialog>
 
-      {/* Add/Edit Project Dialog */}
       <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)}>
         <DialogTitle>
           {isEditMode ? "Edit Project" : "Add New Project"}
